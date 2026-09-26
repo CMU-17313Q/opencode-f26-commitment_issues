@@ -52,3 +52,48 @@ it.instance("learn-recap hints include $ARGUMENTS", () =>
     expect(learnRecap?.hints).toContain("$ARGUMENTS")
   }),
 )
+
+it.instance("init and review are still retrievable after adding learn-recap", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const init = yield* commands.get(Command.Default.INIT)
+    const review = yield* commands.get(Command.Default.REVIEW)
+    expect(init?.name).toBe(Command.Default.INIT)
+    expect(review?.name).toBe(Command.Default.REVIEW)
+    expect(review?.subtask).toBe(true)
+  }),
+)
+
+it.instance("command list contains init, review, and learn-recap", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    const names = list.map((c) => c.name)
+    expect(names).toEqual(
+      expect.arrayContaining([Command.Default.INIT, Command.Default.REVIEW, Command.Default.LEARN_RECAP]),
+    )
+  }),
+)
+
+it.instance("hints() does not throw on the learn-recap placeholder template", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnRecap = yield* commands.get(Command.Default.LEARN_RECAP)
+    const template = yield* Effect.promise(() => Promise.resolve(learnRecap?.template))
+    expect(() => Command.hints(template as string)).not.toThrow()
+    expect(Command.hints(template as string)).toEqual(expect.any(Array))
+  }),
+)
+
+it.instance("learn-recap template getter never throws and always returns a string", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnRecap = yield* commands.get(Command.Default.LEARN_RECAP)
+    let template: unknown
+    expect(() => {
+      template = learnRecap?.template
+    }).not.toThrow()
+    const resolved = yield* Effect.promise(() => Promise.resolve(template))
+    expect(typeof resolved).toBe("string")
+  }),
+)
