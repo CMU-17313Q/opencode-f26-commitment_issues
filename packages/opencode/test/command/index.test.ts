@@ -6,51 +6,55 @@ import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
 import { Skill } from "@/skill"
 import { testEffect } from "../lib/effect"
-import PROMPT_LEARN_TESTS from "@/command/template/test-explanation.txt"
+import PROMPT_LEARN_TEST from "@/command/template/learn-test.txt"
 
 const it = testEffect(LayerNode.compile(LayerNode.group([Command.node, Config.node, MCP.node, Skill.node])))
 
-it.instance("learn-tests appears in the command list", () =>
+// ---------------------------------------------------------------------------
+// Command registration
+// ---------------------------------------------------------------------------
+
+it.instance("learn-test appears in the command list", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
     const list = yield* commands.list()
-    expect(list.some((c) => c.name === Command.Default.LEARN_TESTS)).toBe(true)
+    expect(list.some((c) => c.name === Command.Default.LEARN_TEST)).toBe(true)
   }),
 )
 
-it.instance("learn-tests can be retrieved individually", () =>
+it.instance("learn-test can be retrieved individually", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    expect(learnTests).toBeDefined()
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    expect(learnTest).toBeDefined()
   }),
 )
 
-it.instance("learn-tests default key is 'learn-tests'", () =>
+it.instance("learn-test default key is 'learn-test'", () =>
   Effect.gen(function* () {
-    expect(Command.Default.LEARN_TESTS).toBe("learn-tests")
+    expect(Command.Default.LEARN_TEST).toBe("learn-test")
   }),
 )
 
-it.instance("learn-tests has the expected name, description, and source", () =>
-  Effect.gen(function* () {
-    const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-
-    expect(learnTests?.name).toBe(Command.Default.LEARN_TESTS)
-    expect(learnTests?.description).toBe("explain tests and why their assertions and setup matter")
-    expect(learnTests?.source).toBe("command")
-  }),
-)
-
-it.instance("learn-tests runs inline (not as a subtask) with no agent or model override", () =>
+it.instance("learn-test has the expected name, description, and source", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
 
-    expect(learnTests?.subtask).toBeUndefined()
-    expect(learnTests?.agent).toBeUndefined()
-    expect(learnTests?.model).toBeUndefined()
+    expect(learnTest?.name).toBe(Command.Default.LEARN_TEST)
+    expect(learnTest?.description).toBe("explains what the tests are doing and what behavior they verify")
+    expect(learnTest?.source).toBe("command")
+  }),
+)
+
+it.instance("learn-test runs inline with no subtask, agent, or model override", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+
+    expect(learnTest?.subtask).toBeUndefined()
+    expect(learnTest?.agent).toBeUndefined()
+    expect(learnTest?.model).toBeUndefined()
   }),
 )
 
@@ -58,79 +62,79 @@ it.instance("learn-tests runs inline (not as a subtask) with no agent or model o
 // Template wiring
 // ---------------------------------------------------------------------------
 
-it.instance("learn-tests template is non-empty", () =>
+it.instance("learn-test template is non-empty", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
     expect(typeof template).toBe("string")
     expect((template as string).length).toBeGreaterThan(0)
   }),
 )
 
-it.instance("learn-tests template is exactly the contents of test-explanation.txt", () =>
+it.instance("learn-test template is exactly the contents of learn-test.txt", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
-    expect(template).toBe(PROMPT_LEARN_TESTS)
+    expect(template).toBe(PROMPT_LEARN_TEST)
   }),
 )
 
-it.instance("learn-tests template has no unresolved ${path} placeholder", () =>
+it.instance("learn-test template has no unresolved ${path} placeholder", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
     expect(template as string).not.toContain("${path}")
   }),
 )
 
-it.instance("learn-tests template is stable across repeated reads", () =>
+it.instance("learn-test template is stable across repeated reads", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
 
-    const first = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
-    const second = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const first = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
+    const second = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
     expect(first).toBe(second)
   }),
 )
 
-it.instance("learn-tests hints match hints() computed from its template", () =>
+it.instance("learn-test hints match hints() computed from its template", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
-    expect(learnTests?.hints).toEqual(Command.hints(template as string))
+    expect(learnTest?.hints).toEqual(Command.hints(template as string))
   }),
 )
 
-it.instance("hints() does not throw on the learn-tests template", () =>
+it.instance("hints() does not throw on the learn-test placeholder template", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
-    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTest?.template))
 
     expect(() => Command.hints(template as string)).not.toThrow()
     expect(Command.hints(template as string)).toEqual(expect.any(Array))
   }),
 )
 
-it.instance("learn-tests template getter never throws and always returns a string", () =>
+it.instance("learn-test template getter never throws and always returns a string", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
 
     let template: unknown
 
     expect(() => {
-      template = learnTests?.template
+      template = learnTest?.template
     }).not.toThrow()
 
     const resolved = yield* Effect.promise(() => Promise.resolve(template))
@@ -142,22 +146,20 @@ it.instance("learn-tests template getter never throws and always returns a strin
 // Registry sanity / regressions
 // ---------------------------------------------------------------------------
 
-it.instance("init, review, and learn-quiz are still retrievable after adding learn-tests", () =>
+it.instance("init and review are still retrievable after adding learn-test", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
 
     const init = yield* commands.get(Command.Default.INIT)
     const review = yield* commands.get(Command.Default.REVIEW)
-    const learnQuiz = yield* commands.get(Command.Default.LEARN_QUIZ)
 
     expect(init?.name).toBe(Command.Default.INIT)
     expect(review?.name).toBe(Command.Default.REVIEW)
-    expect(learnQuiz?.name).toBe(Command.Default.LEARN_QUIZ)
     expect(review?.subtask).toBe(true)
   }),
 )
 
-it.instance("command list contains init, review, learn-quiz, and learn-tests", () =>
+it.instance("command list contains init, review, and learn-test", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
     const list = yield* commands.list()
@@ -167,26 +169,25 @@ it.instance("command list contains init, review, learn-quiz, and learn-tests", (
       expect.arrayContaining([
         Command.Default.INIT,
         Command.Default.REVIEW,
-        Command.Default.LEARN_QUIZ,
-        Command.Default.LEARN_TESTS,
+        Command.Default.LEARN_TEST,
       ]),
     )
   }),
 )
 
-it.instance("command list has no duplicate learn-tests entries", () =>
+it.instance("command list has no duplicate learn-test entries", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
     const list = yield* commands.list()
 
-    expect(list.filter((c) => c.name === Command.Default.LEARN_TESTS)).toHaveLength(1)
+    expect(list.filter((c) => c.name === Command.Default.LEARN_TEST)).toHaveLength(1)
   }),
 )
 
 it.instance("get() returns undefined for an unknown command", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
-    const missing = yield* commands.get("learn-tests-does-not-exist")
+    const missing = yield* commands.get("learn-test-does-not-exist")
 
     expect(missing).toBeUndefined()
   }),
@@ -279,28 +280,28 @@ test("hints() lists numbered placeholders before $ARGUMENTS", () => {
 })
 
 // ---------------------------------------------------------------------------
-// Acceptance criteria for the final Test Explanation template.
-// Keep these as todos until the prompt template is finalized.
+// Acceptance criteria for the real template.
+// These remain todos while learn-test.txt is a placeholder.
 // ---------------------------------------------------------------------------
 
-test.todo("learn-tests template accepts relevant test context via $ARGUMENTS", () => {
-  expect(Command.hints(PROMPT_LEARN_TESTS)).toContain("$ARGUMENTS")
+test.todo("learn-test template accepts relevant test context via $ARGUMENTS", () => {
+  expect(Command.hints(PROMPT_LEARN_TEST)).toContain("$ARGUMENTS")
 })
 
-test.todo("learn-tests template asks for the purpose of the relevant tests", () => {
-  expect(PROMPT_LEARN_TESTS).toMatch(/\b(purpose|why.*test|what.*test.*verify)\b/i)
+test.todo("learn-test template identifies the purpose of the relevant tests", () => {
+  expect(PROMPT_LEARN_TEST).toMatch(/\b(purpose|why.*test|what.*test.*verify)\b/i)
 })
 
-test.todo("learn-tests template explains behavior rather than paraphrasing code line-by-line", () => {
-  expect(PROMPT_LEARN_TESTS).toMatch(/\b(behavior|verify|intent|purpose)\b/i)
+test.todo("learn-test template explains behavior rather than paraphrasing code line-by-line", () => {
+  expect(PROMPT_LEARN_TEST).toMatch(/\b(behavior|verify|intent|purpose)\b/i)
 })
 
-test.todo("learn-tests template asks why important assertions or setup steps matter", () => {
-  expect(PROMPT_LEARN_TESTS).toMatch(
+test.todo("learn-test template explains why important assertions or setup steps matter", () => {
+  expect(PROMPT_LEARN_TEST).toMatch(
     /\b(why|important|matter|assertion|setup|precondition|fixture)\b/i,
   )
 })
 
-test.todo("learn-tests template does not simply reveal solutions or rewrite code", () => {
-  expect(PROMPT_LEARN_TESTS).toMatch(/(do not|don't|never|avoid)[^.]*(rewrite|solution|answer)/i)
+test.todo("learn-test template does not reveal solutions or rewrite code", () => {
+  expect(PROMPT_LEARN_TEST).toMatch(/(do not|don't|never|avoid)[^.]*(rewrite|solution|answer)/i)
 })
