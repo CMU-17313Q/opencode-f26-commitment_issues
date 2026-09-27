@@ -6,6 +6,7 @@ import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
 import { Skill } from "@/skill"
 import { testEffect } from "../lib/effect"
+import PROMPT_LEARN_TESTS from "@/command/template/test-explanation.txt"
 
 const it = testEffect(LayerNode.compile(LayerNode.group([Command.node, Config.node, MCP.node, Skill.node])))
 
@@ -50,6 +51,90 @@ it.instance("learn-tests runs inline (not as a subtask) with no agent or model o
     expect(learnTests?.subtask).toBeUndefined()
     expect(learnTests?.agent).toBeUndefined()
     expect(learnTests?.model).toBeUndefined()
+  }),
+)
+
+// ---------------------------------------------------------------------------
+// Template wiring
+// ---------------------------------------------------------------------------
+
+it.instance("learn-tests template is non-empty", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(typeof template).toBe("string")
+    expect((template as string).length).toBeGreaterThan(0)
+  }),
+)
+
+it.instance("learn-tests template is exactly the contents of test-explanation.txt", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(template).toBe(PROMPT_LEARN_TESTS)
+  }),
+)
+
+it.instance("learn-tests template has no unresolved ${path} placeholder", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(template as string).not.toContain("${path}")
+  }),
+)
+
+it.instance("learn-tests template is stable across repeated reads", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+
+    const first = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+    const second = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(first).toBe(second)
+  }),
+)
+
+it.instance("learn-tests hints match hints() computed from its template", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(learnTests?.hints).toEqual(Command.hints(template as string))
+  }),
+)
+
+it.instance("hints() does not throw on the learn-tests template", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+    const template = yield* Effect.promise(() => Promise.resolve(learnTests?.template))
+
+    expect(() => Command.hints(template as string)).not.toThrow()
+    expect(Command.hints(template as string)).toEqual(expect.any(Array))
+  }),
+)
+
+it.instance("learn-tests template getter never throws and always returns a string", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnTests = yield* commands.get(Command.Default.LEARN_TESTS)
+
+    let template: unknown
+
+    expect(() => {
+      template = learnTests?.template
+    }).not.toThrow()
+
+    const resolved = yield* Effect.promise(() => Promise.resolve(template))
+    expect(typeof resolved).toBe("string")
   }),
 )
 
