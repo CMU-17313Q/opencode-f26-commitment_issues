@@ -138,6 +138,25 @@ it.instance("learn-tests template getter never throws and always returns a strin
   }),
 )
 
+// ---------------------------------------------------------------------------
+// Registry sanity / regressions
+// ---------------------------------------------------------------------------
+
+it.instance("init, review, and learn-quiz are still retrievable after adding learn-tests", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+
+    const init = yield* commands.get(Command.Default.INIT)
+    const review = yield* commands.get(Command.Default.REVIEW)
+    const learnQuiz = yield* commands.get(Command.Default.LEARN_QUIZ)
+
+    expect(init?.name).toBe(Command.Default.INIT)
+    expect(review?.name).toBe(Command.Default.REVIEW)
+    expect(learnQuiz?.name).toBe(Command.Default.LEARN_QUIZ)
+    expect(review?.subtask).toBe(true)
+  }),
+)
+
 it.instance("command list contains init, review, learn-quiz, and learn-tests", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
@@ -152,6 +171,86 @@ it.instance("command list contains init, review, learn-quiz, and learn-tests", (
         Command.Default.LEARN_TESTS,
       ]),
     )
+  }),
+)
+
+it.instance("command list has no duplicate learn-tests entries", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+
+    expect(list.filter((c) => c.name === Command.Default.LEARN_TESTS)).toHaveLength(1)
+  }),
+)
+
+it.instance("get() returns undefined for an unknown command", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const missing = yield* commands.get("learn-tests-does-not-exist")
+
+    expect(missing).toBeUndefined()
+  }),
+)
+
+it.instance("every listed command has a name, a source, and a hints array", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+
+    for (const c of list) {
+      expect(typeof c.name).toBe("string")
+      expect(c.name.length).toBeGreaterThan(0)
+      expect(["command", "mcp", "skill"]).toContain(c.source ?? "")
+      expect(Array.isArray(c.hints)).toBe(true)
+    }
+  }),
+)
+
+it.instance("every listed command is retrievable by name", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+
+    for (const command of list) {
+      const found = yield* commands.get(command.name)
+      expect(found?.name).toBe(command.name)
+    }
+  }),
+)
+
+it.instance("command names in the list are unique", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    const names = list.map((c) => c.name)
+
+    expect(new Set(names).size).toBe(names.length)
+  }),
+)
+
+it.instance("init and review templates still resolve to non-empty strings", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+
+    for (const name of [Command.Default.INIT, Command.Default.REVIEW]) {
+      const cmd = yield* commands.get(name)
+      const template = yield* Effect.promise(() => Promise.resolve(cmd?.template))
+
+      expect(typeof template).toBe("string")
+      expect((template as string).length).toBeGreaterThan(0)
+    }
+  }),
+)
+
+it.instance("init and review descriptions are unchanged", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+
+    const init = yield* commands.get(Command.Default.INIT)
+    const review = yield* commands.get(Command.Default.REVIEW)
+
+    expect(init?.description).toBe("guided AGENTS.md setup")
+    expect(review?.description).toBe("review changes [commit|branch|pr], defaults to uncommitted")
   }),
 )
 
@@ -177,4 +276,31 @@ test("hints() dedupes and sorts numbered placeholders", () => {
 
 test("hints() lists numbered placeholders before $ARGUMENTS", () => {
   expect(Command.hints("$ARGUMENTS first, then $1")).toEqual(["$1", "$ARGUMENTS"])
+})
+
+// ---------------------------------------------------------------------------
+// Acceptance criteria for the final Test Explanation template.
+// Keep these as todos until the prompt template is finalized.
+// ---------------------------------------------------------------------------
+
+test.todo("learn-tests template accepts relevant test context via $ARGUMENTS", () => {
+  expect(Command.hints(PROMPT_LEARN_TESTS)).toContain("$ARGUMENTS")
+})
+
+test.todo("learn-tests template asks for the purpose of the relevant tests", () => {
+  expect(PROMPT_LEARN_TESTS).toMatch(/\b(purpose|why.*test|what.*test.*verify)\b/i)
+})
+
+test.todo("learn-tests template explains behavior rather than paraphrasing code line-by-line", () => {
+  expect(PROMPT_LEARN_TESTS).toMatch(/\b(behavior|verify|intent|purpose)\b/i)
+})
+
+test.todo("learn-tests template asks why important assertions or setup steps matter", () => {
+  expect(PROMPT_LEARN_TESTS).toMatch(
+    /\b(why|important|matter|assertion|setup|precondition|fixture)\b/i,
+  )
+})
+
+test.todo("learn-tests template does not simply reveal solutions or rewrite code", () => {
+  expect(PROMPT_LEARN_TESTS).toMatch(/(do not|don't|never|avoid)[^.]*(rewrite|solution|answer)/i)
 })
