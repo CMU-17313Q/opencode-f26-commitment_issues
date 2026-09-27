@@ -187,7 +187,7 @@ it.instance("every listed command has a name, a source, and a hints array", () =
     for (const c of list) {
       expect(typeof c.name).toBe("string")
       expect(c.name.length).toBeGreaterThan(0)
-      expect(["command", "mcp", "skill"]).toContain(c.source)
+      expect(["command", "mcp", "skill"]).toContain(c.source ?? "")
       expect(Array.isArray(c.hints)).toBe(true)
     }
   }),
@@ -344,16 +344,5 @@ it.instance("command names in the list are unique", () =>
     const list = yield* commands.list()
     const names = list.map((c) => c.name)
     expect(new Set(names).size).toBe(names.length)
-  }),
-)
-
-it.instance("every listed command has a valid source and a hints array", () =>
-  Effect.gen(function* () {
-    const commands = yield* Command.Service
-    const list = yield* commands.list()
-    for (const command of list) {
-      expect(["command", "mcp", "skill"]).toContain(command.source)
-      expect(Array.isArray(command.hints)).toBe(true)
-    }
   }),
 )
