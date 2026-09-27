@@ -264,3 +264,28 @@ test.todo("learn-quiz template tells the model not to reveal solutions or rewrit
 test.todo("learn-quiz template asks for a short set of questions", () => {
   expect(PROMPT_LEARN_QUIZ).toMatch(/\b([2-9]|few|short|brief)\b/i)
 })
+
+it.instance("hints() returns an empty array for a template with no placeholders", () =>
+  Effect.gen(function* () {
+    expect(Command.hints("")).toEqual([])
+    expect(Command.hints("Ask the student about their code.")).toEqual([])
+  }),
+)
+
+it.instance("hints() detects $ARGUMENTS", () =>
+  Effect.gen(function* () {
+    expect(Command.hints("Quiz me on $ARGUMENTS")).toEqual(["$ARGUMENTS"])
+  }),
+)
+
+it.instance("hints() dedupes and sorts numbered placeholders", () =>
+  Effect.gen(function* () {
+    expect(Command.hints("$2 then $1 then $2 again")).toEqual(["$1", "$2"])
+  }),
+)
+
+it.instance("hints() puts numbered placeholders before $ARGUMENTS", () =>
+  Effect.gen(function* () {
+    expect(Command.hints("$ARGUMENTS and $1")).toEqual(["$1", "$ARGUMENTS"])
+  }),
+)
