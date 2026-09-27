@@ -289,3 +289,32 @@ it.instance("hints() puts numbered placeholders before $ARGUMENTS", () =>
     expect(Command.hints("$ARGUMENTS and $1")).toEqual(["$1", "$ARGUMENTS"])
   }),
 )
+
+it.instance("learn-quiz template is stable across repeated access", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnQuiz = yield* commands.get(Command.Default.LEARN_QUIZ)
+    const first = yield* Effect.promise(() => Promise.resolve(learnQuiz?.template))
+    const second = yield* Effect.promise(() => Promise.resolve(learnQuiz?.template))
+    expect(second).toBe(first)
+  }),
+)
+
+it.instance("learn-quiz template has no unresolved ${path} placeholder", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const learnQuiz = yield* commands.get(Command.Default.LEARN_QUIZ)
+    const template = yield* Effect.promise(() => Promise.resolve(learnQuiz?.template))
+    expect(template as string).not.toContain("${path}")
+  }),
+)
+
+it.instance("learn-quiz is returned by get() as the same entry found in list()", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    const fromList = list.find((c) => c.name === Command.Default.LEARN_QUIZ)
+    const fromGet = yield* commands.get(Command.Default.LEARN_QUIZ)
+    expect(fromGet).toBe(fromList)
+  }),
+)
