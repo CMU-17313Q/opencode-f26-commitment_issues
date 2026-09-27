@@ -318,3 +318,42 @@ it.instance("learn-quiz is returned by get() as the same entry found in list()",
     expect(fromGet).toBe(fromList)
   }),
 )
+
+it.instance("get() returns undefined for an unknown command", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const missing = yield* commands.get("definitely-not-a-real-command")
+    expect(missing).toBeUndefined()
+  }),
+)
+
+it.instance("every listed command is retrievable by name", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    for (const command of list) {
+      const found = yield* commands.get(command.name)
+      expect(found?.name).toBe(command.name)
+    }
+  }),
+)
+
+it.instance("command names in the list are unique", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    const names = list.map((c) => c.name)
+    expect(new Set(names).size).toBe(names.length)
+  }),
+)
+
+it.instance("every listed command has a valid source and a hints array", () =>
+  Effect.gen(function* () {
+    const commands = yield* Command.Service
+    const list = yield* commands.list()
+    for (const command of list) {
+      expect(["command", "mcp", "skill"]).toContain(command.source)
+      expect(Array.isArray(command.hints)).toBe(true)
+    }
+  }),
+)
