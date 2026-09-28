@@ -41,4 +41,11 @@ describe("reflection questions template", () => {
     expect(REFLECTION_QUESTIONS).toContain("Identify the language and framework")
     expect(REFLECTION_QUESTIONS).toContain("Do not assume any particular one")
   })
+  
+  test("uses a clear student-friendly output format", () => {
+    expect(REFLECTION_QUESTIONS).toContain("short numbered list")
+    expect(REFLECTION_QUESTIONS).toContain("one or two sentences")
+    expect(REFLECTION_QUESTIONS).toContain("clear and encouraging, not condescending")
+    expect(REFLECTION_QUESTIONS).toContain("answer in their own words")
+})
 })
