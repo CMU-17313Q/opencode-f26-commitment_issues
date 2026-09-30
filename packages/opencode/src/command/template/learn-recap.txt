@@ -1,0 +1,3 @@
+TODO: placeholder template, to be replaced with the real prompt.
+
+Input: $ARGUMENTS

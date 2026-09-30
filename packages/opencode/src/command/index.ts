@@ -10,6 +10,7 @@ import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
 import PROMPT_LEARN_TEST from "./template/learn-test.txt"
+import PROMPT_LEARN_RECAP from "./template/learn-recap.txt"
 import { LegacyEvent } from "@opencode-ai/schema/legacy-event"
 
 type State = {
@@ -48,6 +49,7 @@ export const Default = {
   INIT: "init",
   REVIEW: "review",
   LEARN_TEST: "learn-test",
+  LEARN_RECAP: "learn-recap",
 } as const
 
 export interface Interface {
@@ -96,6 +98,14 @@ const layer = Layer.effect(
           return PROMPT_LEARN_TEST
         },
         hints: hints(PROMPT_LEARN_TEST),
+      commands[Default.LEARN_RECAP] = {
+        name: Default.LEARN_RECAP,
+        description: "recap what was learned",
+        source: "command",
+        get template() {
+          return PROMPT_LEARN_RECAP
+        },
+        hints: hints(PROMPT_LEARN_RECAP),
       }
 
       for (const [name, command] of Object.entries(cfg.command ?? {})) {
