@@ -38,26 +38,46 @@ describe("buildHelpPrompt", () => {
 describe("requestHelp", () => {
   test("creates a session in the project and sends the prompt to the agent", async () => {
     const fake = fakeClient()
-    expect(await requestHelp(fake.client, "/work/midterm", "help me")).toEqual({ ok: true, sessionID: "ses_1" })
+    expect(await requestHelp(fake.client, { directory: "/work/midterm" }, "help me")).toEqual({
+      ok: true,
+      sessionID: "ses_1",
+    })
     expect(fake.calls).toEqual([
       { create: { directory: "/work/midterm", title: HELP_SESSION_TITLE } },
       { prompt: { sessionID: "ses_1", directory: "/work/midterm", parts: [{ type: "text", text: "help me" }] } },
     ])
   })
 
+  test("sends into the existing study session without creating a new one", async () => {
+    const fake = fakeClient()
+    expect(await requestHelp(fake.client, { directory: "/work/midterm", sessionID: "ses_study" }, "help me")).toEqual({
+      ok: true,
+      sessionID: "ses_study",
+    })
+    expect(fake.calls).toEqual([
+      { prompt: { sessionID: "ses_study", directory: "/work/midterm", parts: [{ type: "text", text: "help me" }] } },
+    ])
+  })
+
   test("reports no-project without calling the server", async () => {
     const fake = fakeClient()
-    expect(await requestHelp(fake.client, undefined, "help me")).toEqual({ ok: false, reason: "no-project" })
+    expect(await requestHelp(fake.client, {}, "help me")).toEqual({ ok: false, reason: "no-project" })
     expect(fake.calls).toEqual([])
   })
 
   test("reports failure when the session cannot be created", async () => {
     const fake = fakeClient({ createFails: true })
-    expect(await requestHelp(fake.client, "/work/midterm", "help me")).toEqual({ ok: false, reason: "failed" })
+    expect(await requestHelp(fake.client, { directory: "/work/midterm" }, "help me")).toEqual({
+      ok: false,
+      reason: "failed",
+    })
   })
 
   test("reports failure when the prompt cannot be sent", async () => {
     const fake = fakeClient({ promptFails: true })
-    expect(await requestHelp(fake.client, "/work/midterm", "help me")).toEqual({ ok: false, reason: "failed" })
+    expect(await requestHelp(fake.client, { directory: "/work/midterm" }, "help me")).toEqual({
+      ok: false,
+      reason: "failed",
+    })
   })
 })

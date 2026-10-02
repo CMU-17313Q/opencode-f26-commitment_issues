@@ -26,8 +26,7 @@
   font-weight: 600;
 }
 
-.focus-card__subtitle,
-.focus-card__history {
+.focus-card__muted {
   color: var(--v2-text-text-muted);
   font-size: 13px;
 }
@@ -95,7 +94,7 @@
   color: var(--v2-text-text-muted);
 }
 
-.focus-message--error {
+.focus-message[data-tone="error"] {
   color: var(--v2-state-fg-danger);
 }
 
@@ -119,32 +118,31 @@
   line-height: 1;
 }
 
-/* Status bar: green active, yellow idle, red unresponsive, grey neutral. */
-.focus-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--v2-text-text-muted);
-}
-
-.focus-status__bar {
-  flex: 1;
-  height: 6px;
+/* Focus timeline: fills left to right over the round; grey = not reached yet.
+   Each stretch is green (focused), yellow (distracted) or red (not focused). */
+.focus-meter {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
   border-radius: 999px;
-  background: var(--v2-background-bg-layer-04);
-  transition: background-color 300ms ease;
+  background: var(--v2-background-bg-layer-03);
 }
 
-.focus-status[data-status="active"] .focus-status__bar {
+.focus-meter__segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.focus-meter__segment[data-status="active"] {
   background: var(--v2-state-fg-success);
 }
 
-.focus-status[data-status="idle"] .focus-status__bar {
+.focus-meter__segment[data-status="idle"] {
   background: var(--v2-state-fg-warning);
 }
 
-.focus-status[data-status="unresponsive"] .focus-status__bar {
+.focus-meter__segment[data-status="unresponsive"] {
   background: var(--v2-state-fg-danger);
 }
 
@@ -159,30 +157,18 @@
   font-size: 13px;
 }
 
-/* Lock overlay covering the whole window during work. */
-.focus-lock {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: color-mix(in srgb, var(--v2-background-bg-deep) 85%, transparent);
-  backdrop-filter: blur(4px);
-}
-
+/* Floating panel shown on every page while a session runs (outside the home card). */
 .focus-card--floating {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
   margin: 0;
-  max-width: 420px;
-  box-shadow: var(--v2-elevation-overlay);
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px 14px;
+  box-shadow: var(--v2-elevation-floating);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .focus-status__bar {
-    transition: none;
-  }
-  .focus-lock {
-    backdrop-filter: none;
-  }
+.focus-active[data-compact] .focus-active__time {
+  font-size: 28px;
 }

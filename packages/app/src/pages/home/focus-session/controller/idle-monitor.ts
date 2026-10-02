@@ -31,17 +31,20 @@ export function createIdleMonitor(deps: { clock: Clock }) {
     state.cancel = undefined
   }
 
+  const checkIn = () => {
+    clear()
+    setStatus("idle")
+    emit({ type: "check-in" })
+    state.cancel = deps.clock.after(UNRESPONSIVE_AFTER_MS, () => {
+      state.cancel = undefined
+      setStatus("unresponsive")
+    })
+  }
+
   const watch = () => {
     clear()
     setStatus("active")
-    state.cancel = deps.clock.after(IDLE_AFTER_MS, () => {
-      setStatus("idle")
-      emit({ type: "check-in" })
-      state.cancel = deps.clock.after(UNRESPONSIVE_AFTER_MS, () => {
-        state.cancel = undefined
-        setStatus("unresponsive")
-      })
-    })
+    state.cancel = deps.clock.after(IDLE_AFTER_MS, checkIn)
   }
 
   return {
@@ -65,6 +68,12 @@ export function createIdleMonitor(deps: { clock: Clock }) {
     activity() {
       if (state.status !== "active") return
       watch()
+    },
+    // The student left the opencode tab or window: check in right away instead of after 2 minutes.
+    away() {
+      if (state.status !== "active") return false
+      checkIn()
+      return true
     },
     answer(needsHelp: boolean) {
       if (state.status !== "idle" && state.status !== "unresponsive") return false

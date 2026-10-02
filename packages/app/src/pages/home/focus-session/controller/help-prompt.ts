@@ -34,10 +34,21 @@ export function buildHelpPrompt(context: HelpContext) {
   ].join("\n")
 }
 
-export async function requestHelp(client: HelpClient, directory: string | undefined, text: string) {
+// Sends the prompt into the student's study session, creating it first if the study tab
+// is still an unsent draft.
+export async function requestHelp(
+  client: HelpClient,
+  target: { directory?: string; sessionID?: string },
+  text: string,
+) {
+  const directory = target.directory
   if (!directory) return { ok: false, reason: "no-project" } satisfies HelpResult
-  const created = await client.session.create({ directory, title: HELP_SESSION_TITLE }).catch(() => undefined)
-  const sessionID = created?.data?.id
+  const sessionID =
+    target.sessionID ??
+    (await client.session
+      .create({ directory, title: HELP_SESSION_TITLE })
+      .then((created) => created.data?.id)
+      .catch(() => undefined))
   if (!sessionID) return { ok: false, reason: "failed" } satisfies HelpResult
   const sent = await client.session
     .promptAsync({ sessionID, directory, parts: [{ type: "text", text }] })

@@ -79,35 +79,6 @@ describe("work then break transitions", () => {
   })
 })
 
-describe("releaseLock", () => {
-  test("unlocks the UI for the rest of the work period while the timer keeps running", () => {
-    const s = setup()
-    s.start()
-    expect(s.controller.releaseLock()).toBe(true)
-    expect(s.controller.snapshot()).toMatchObject({ phase: "work", locked: false })
-    s.time.advance(MINUTE)
-    expect(s.controller.snapshot().remainingMs).toBe(24 * MINUTE)
-    expect(s.log).not.toContain("pause")
-  })
-
-  test("the next work round locks again", () => {
-    const s = setup()
-    s.start()
-    s.controller.releaseLock()
-    s.time.advance(30 * MINUTE)
-    s.controller.nextRound()
-    expect(s.controller.snapshot().locked).toBe(true)
-  })
-
-  test("only applies during work", () => {
-    const s = setup()
-    expect(s.controller.releaseLock()).toBe(false)
-    s.start()
-    s.time.advance(25 * MINUTE)
-    expect(s.controller.releaseLock()).toBe(false)
-  })
-})
-
 describe("pause and resume", () => {
   test("pausing freezes the countdown and resuming continues it", () => {
     const s = setup()

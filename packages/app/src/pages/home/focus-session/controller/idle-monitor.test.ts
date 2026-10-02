@@ -71,6 +71,26 @@ describe("idle status transitions", () => {
     expect(s.monitor.answer(true)).toBe(false)
   })
 
+  test("leaving the tab checks in immediately, then turns red without an answer", () => {
+    const s = setup()
+    s.monitor.enable()
+    s.time.advance(10_000)
+    expect(s.monitor.away()).toBe(true)
+    expect(s.monitor.status()).toBe("idle")
+    expect(s.events).toEqual(["status:active", "status:idle", "check-in"])
+    s.time.advance(UNRESPONSIVE_AFTER_MS)
+    expect(s.monitor.status()).toBe("unresponsive")
+  })
+
+  test("leaving the tab is ignored when not tracking or already checked in", () => {
+    const s = setup()
+    expect(s.monitor.away()).toBe(false)
+    s.monitor.enable()
+    s.monitor.away()
+    expect(s.monitor.away()).toBe(false)
+    expect(s.events.filter((event) => event === "check-in")).toHaveLength(1)
+  })
+
   test("disable goes grey and cancels pending timers", () => {
     const s = setup()
     s.monitor.enable()

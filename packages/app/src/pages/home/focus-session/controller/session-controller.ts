@@ -18,7 +18,6 @@ export type FocusEvent =
   | { type: "tick" }
   | { type: "paused" }
   | { type: "resumed" }
-  | { type: "unlocked" }
   | { type: "work-complete"; round: number }
   | { type: "ended"; reason: "ended" | "cancelled"; phase: FocusPhase; round: number }
 
@@ -48,7 +47,6 @@ export function createFocusSessionController(deps: { clock: Clock; audio: AudioP
     volume: 1,
     fading: false,
     ducked: false,
-    unlocked: false,
     timing: undefined as FocusTiming | undefined,
     trackID: undefined as string | undefined,
     stopTicker: undefined as Cancel | undefined,
@@ -58,7 +56,7 @@ export function createFocusSessionController(deps: { clock: Clock; audio: AudioP
   const snapshot = (): FocusSnapshot => ({
     phase: state.phase,
     paused: state.paused,
-    locked: state.phase === "work" && !state.unlocked,
+    locked: state.phase === "work",
     remainingMs: remaining(),
     round: state.round,
     timing: state.timing,
@@ -95,7 +93,6 @@ export function createFocusSessionController(deps: { clock: Clock; audio: AudioP
     state.phase = phase
     state.paused = false
     state.fading = false
-    state.unlocked = false
     state.deadline = deps.clock.now() + minutes * MINUTE
     if (phase === "work" || phase === "break") startTicker()
     emit({ type: "phase", phase })
@@ -196,14 +193,6 @@ export function createFocusSessionController(deps: { clock: Clock; audio: AudioP
       state.paused = false
       emit({ type: "ended", reason, phase, round: state.round })
       state.round = 0
-      return true
-    },
-    // Lift the UI lock for the rest of this work period (e.g. to read the agent's help answer).
-    // The timer and music keep running; the next work round locks again.
-    releaseLock() {
-      if (state.phase !== "work" || state.unlocked) return false
-      state.unlocked = true
-      emit({ type: "unlocked" })
       return true
     },
     setVolume(volume: number) {

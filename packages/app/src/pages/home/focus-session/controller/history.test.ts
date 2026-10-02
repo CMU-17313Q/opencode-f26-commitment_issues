@@ -45,7 +45,42 @@ describe("history storage helpers", () => {
         record({ roundsCompleted: 2, workMinutes: 25, helpRequests: 1 }),
         record({ roundsCompleted: 0, workMinutes: 50, outcome: "ended" }),
       ]),
-    ).toEqual({ sessions: 2, roundsCompleted: 2, focusMinutes: 50, helpRequests: 1 })
+    ).toEqual({
+      sessions: 2,
+      roundsCompleted: 2,
+      focusMinutes: 50,
+      helpRequests: 1,
+      averageFocus: undefined,
+      awayMinutes: 0,
+    })
+  })
+
+  test("averages the focus score and adds up time away", () => {
+    const summary = summarizeHistory([
+      record({ focusScore: 90, awayMinutes: 1 }),
+      record({ focusScore: 60, awayMinutes: 4 }),
+      record(),
+    ])
+    expect(summary).toMatchObject({ averageFocus: 75, awayMinutes: 5 })
+  })
+})
+
+describe("trackHistory with focus", () => {
+  test("saves the session's focus score and time away", () => {
+    const time = createFakeClock()
+    const controller = createFocusSessionController({ clock: time.clock, audio: createFakeAudio().audio })
+    const monitor = createIdleMonitor({ clock: time.clock })
+    const saved: FocusHistoryRecord[] = []
+    trackHistory({
+      clock: time.clock,
+      controller,
+      monitor,
+      save: (item) => saved.push(item),
+      focus: () => ({ score: 82, awayMs: 150_000 }),
+    })
+    controller.start({ timing: { workMinutes: 25, breakMinutes: 5 }, volume: 1 })
+    controller.end()
+    expect(saved[0]).toMatchObject({ focusScore: 82, awayMinutes: 3 })
   })
 })
 

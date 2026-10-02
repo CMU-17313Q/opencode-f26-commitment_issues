@@ -13,6 +13,9 @@ export type FocusHistoryRecord = {
   helpRequests: number
   outcome: FocusOutcome
   trackID?: string
+  // Share of tracked work time the student was focused (0-100), and time spent outside opencode.
+  focusScore?: number
+  awayMinutes?: number
 }
 
 export const HISTORY_LIMIT = 50
@@ -23,11 +26,14 @@ export function appendHistory(history: readonly FocusHistoryRecord[], record: Fo
 }
 
 export function summarizeHistory(history: readonly FocusHistoryRecord[]) {
+  const scored = history.flatMap((item) => (item.focusScore === undefined ? [] : [item.focusScore]))
   return {
     sessions: history.length,
     roundsCompleted: history.reduce((sum, item) => sum + item.roundsCompleted, 0),
     focusMinutes: history.reduce((sum, item) => sum + item.roundsCompleted * item.workMinutes, 0),
     helpRequests: history.reduce((sum, item) => sum + item.helpRequests, 0),
+    averageFocus: scored.length ? Math.round(scored.reduce((sum, score) => sum + score, 0) / scored.length) : undefined,
+    awayMinutes: history.reduce((sum, item) => sum + (item.awayMinutes ?? 0), 0),
   }
 }
 
@@ -37,12 +43,15 @@ export function trackHistory(input: {
   controller: FocusSessionController
   monitor: IdleMonitor
   save: (record: FocusHistoryRecord) => void
+  focus?: () => { score: number; awayMs: number }
 }) {
   const current = { startedAt: 0, rounds: 0, help: 0, active: false }
 
   const save = (outcome: FocusOutcome) => {
     const snapshot = input.controller.snapshot()
+    const focus = input.focus?.()
     input.save({
+      ...(focus ? { focusScore: focus.score, awayMinutes: Math.round(focus.awayMs / 60_000) } : {}),
       startedAt: current.startedAt,
       endedAt: input.clock.now(),
       workMinutes: snapshot.timing?.workMinutes ?? 0,
