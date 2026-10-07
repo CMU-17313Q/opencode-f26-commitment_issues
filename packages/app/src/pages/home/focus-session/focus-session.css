@@ -1,0 +1,174 @@
+/* Focus Session card. Scoped by the focus- prefix; uses only existing v2 theme tokens. */
+
+.focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px auto 0;
+  width: 100%;
+  max-width: 1032px;
+  padding: 16px 20px;
+  border: 1px solid var(--v2-border-border-base);
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-01);
+  color: var(--v2-text-text-base);
+}
+
+.focus-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.focus-card__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.focus-card__muted {
+  color: var(--v2-text-text-muted);
+  font-size: 13px;
+}
+
+.focus-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.focus-field legend {
+  margin-bottom: 8px;
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+}
+
+.focus-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--v2-border-border-base);
+  border-radius: 999px;
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+}
+
+.focus-chip[aria-checked="true"] {
+  border-color: var(--v2-border-border-focus);
+  background: var(--v2-background-bg-layer-03);
+}
+
+.focus-chip:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: 2px;
+}
+
+.focus-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--v2-text-text-muted);
+}
+
+.focus-input input {
+  width: 96px;
+  padding: 4px 8px;
+  border: 1px solid var(--v2-border-border-base);
+  border-radius: 6px;
+  background: var(--v2-background-bg-base);
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+}
+
+.focus-message {
+  font-size: 13px;
+  color: var(--v2-text-text-muted);
+}
+
+.focus-message[data-tone="error"] {
+  color: var(--v2-state-fg-danger);
+}
+
+.focus-active {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.focus-active__header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--v2-text-text-muted);
+}
+
+.focus-active__time {
+  font-size: 48px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Focus timeline: fills left to right over the round; grey = not reached yet.
+   Each stretch is green (focused), yellow (distracted) or red (not focused). */
+.focus-meter {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--v2-background-bg-layer-03);
+}
+
+.focus-meter__segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.focus-meter__segment[data-status="active"] {
+  background: var(--v2-state-fg-success);
+}
+
+.focus-meter__segment[data-status="idle"] {
+  background: var(--v2-state-fg-warning);
+}
+
+.focus-meter__segment[data-status="unresponsive"] {
+  background: var(--v2-state-fg-danger);
+}
+
+.focus-checkin {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--v2-state-border-warning);
+  border-radius: 8px;
+  background: var(--v2-state-bg-warning);
+  font-size: 13px;
+}
+
+/* Floating panel shown on every page while a session runs (outside the home card). */
+.focus-card--floating {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  margin: 0;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px 14px;
+  box-shadow: var(--v2-elevation-floating);
+}
+
+.focus-active[data-compact] .focus-active__time {
+  font-size: 28px;
+}
