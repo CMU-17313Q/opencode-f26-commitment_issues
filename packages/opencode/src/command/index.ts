@@ -98,6 +98,7 @@ const layer = Layer.effect(
           return PROMPT_LEARN_TEST
         },
         hints: hints(PROMPT_LEARN_TEST),
+    }
       commands[Default.LEARN_RECAP] = {
         name: Default.LEARN_RECAP,
         description: "recap what was learned",
