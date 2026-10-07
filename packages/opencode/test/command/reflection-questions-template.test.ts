@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { Command } from "../../src/command"
-import REFLECTION_QUESTIONS from "../../src/command/template/reflection-questions.txt"
+import REFLECTION_QUESTIONS from "../../src/command/template/learn-quiz.txt"
 
 describe("reflection questions template", () => {
   test("takes the code to reflect on through $ARGUMENTS", () => {
