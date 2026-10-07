@@ -41,7 +41,18 @@ describe("reflection questions template", () => {
     expect(REFLECTION_QUESTIONS).toContain("Identify the language and framework")
     expect(REFLECTION_QUESTIONS).toContain("Do not assume any particular one")
   })
-  
+
+  test("asks the questions through the interactive quiz instead of printing them", () => {
+    expect(REFLECTION_QUESTIONS).toContain("do not write the questions in your reply")
+    expect(REFLECTION_QUESTIONS).toContain("single call to the `question` tool")
+    expect(REFLECTION_QUESTIONS).toContain("an empty `options` list")
+  })
+
+  test("handles skipped questions and a dismissed quiz", () => {
+    expect(REFLECTION_QUESTIONS).toContain('"Unanswered" was skipped')
+    expect(REFLECTION_QUESTIONS).toContain("dismisses the quiz, stop")
+  })
+
   test("uses a clear student-friendly output format", () => {
     expect(REFLECTION_QUESTIONS).toContain("short numbered list")
     expect(REFLECTION_QUESTIONS).toContain("one or two sentences")
