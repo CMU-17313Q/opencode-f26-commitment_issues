@@ -1816,6 +1816,47 @@ unix(
   30_000,
 )
 
+it.instance(
+  "learn-quiz shows the typed command and keeps its template visible only to the model",
+  () =>
+    Effect.gen(function* () {
+      const { llm } = yield* useServerConfig(providerCfg)
+      const { prompt, sessions, chat } = yield* boot()
+      yield* llm.text("done")
+
+      yield* prompt.command({
+        sessionID: chat.id,
+        command: Command.Default.LEARN_QUIZ,
+        arguments: "src/app.ts",
+      })
+
+      const user = (yield* sessions.messages({ sessionID: chat.id })).find((message) => message.info.role === "user")
+      const texts = user?.parts.filter((part) => part.type === "text") ?? []
+      expect(texts.filter((part) => !part.synthetic).map((part) => part.text)).toEqual(["/learn-quiz src/app.ts"])
+      expect(texts.find((part) => part.synthetic)?.text).toContain("Input: src/app.ts")
+      expect(JSON.stringify((yield* llm.inputs).at(-1)?.messages)).toContain("learning companion")
+    }),
+  30_000,
+)
+
+it.instance(
+  "other commands still show their template",
+  () =>
+    Effect.gen(function* () {
+      const { llm } = yield* useServerConfig(providerCfg)
+      const { prompt, sessions, chat } = yield* boot()
+      yield* llm.text("done")
+
+      yield* prompt.command({ sessionID: chat.id, command: Command.Default.LEARN_RECAP, arguments: "" })
+
+      const user = (yield* sessions.messages({ sessionID: chat.id })).find((message) => message.info.role === "user")
+      const texts = user?.parts.filter((part) => part.type === "text") ?? []
+      expect(texts.some((part) => part.synthetic)).toBe(false)
+      expect(texts.map((part) => part.text).join("")).not.toStartWith("/learn-recap")
+    }),
+  30_000,
+)
+
 unixNoLLMServer(
   "cancel interrupts shell and resolves cleanly",
   () =>
