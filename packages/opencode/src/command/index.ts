@@ -9,6 +9,7 @@ import { MCP } from "../mcp"
 import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
+import PROMPT_LEARN_QUIZ from "./template/reflection-questions.txt"
 import PROMPT_LEARN_TEST from "./template/learn-test.txt"
 import PROMPT_LEARN_RECAP from "./template/learn-recap.txt"
 import { LegacyEvent } from "@opencode-ai/schema/legacy-event"
@@ -48,6 +49,7 @@ export function hints(template: string) {
 export const Default = {
   INIT: "init",
   REVIEW: "review",
+  LEARN_QUIZ: "learn-quiz"
   LEARN_TEST: "learn-test",
   LEARN_RECAP: "learn-recap",
 } as const
@@ -90,6 +92,15 @@ const layer = Layer.effect(
         subtask: true,
         hints: hints(PROMPT_REVIEW),
       }
+      commands[Default.LEARN_QUIZ] = {
+        name: Default.LEARN_QUIZ,
+        description: "generate a quiz for decision justification comprehension",
+        source: "command",
+        get template() {
+          return PROMPT_LEARN_QUIZ
+        },
+        hints: hints(PROMPT_LEARN_QUIZ),
+      }
       commands[Default.LEARN_TEST] = {
         name: Default.LEARN_TEST,
         description: "explains what the tests are doing and what behavior they verify",
@@ -98,7 +109,7 @@ const layer = Layer.effect(
           return PROMPT_LEARN_TEST
         },
         hints: hints(PROMPT_LEARN_TEST),
-    }
+      }
       commands[Default.LEARN_RECAP] = {
         name: Default.LEARN_RECAP,
         description: "recap what was learned",
