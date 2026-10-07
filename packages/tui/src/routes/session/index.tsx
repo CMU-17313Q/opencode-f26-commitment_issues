@@ -66,6 +66,7 @@ import { useEpilogue } from "../../context/epilogue"
 import { normalizePath } from "../../util/path"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
+import { QuizPrompt } from "./quiz"
 import { DialogExportOptions } from "../../ui/dialog-export-options"
 import * as Model from "../../util/model"
 import { formatTranscript } from "../../util/transcript"
@@ -237,6 +238,16 @@ export function Session() {
   const questions = createMemo(() => {
     if (session()?.parentID) return []
     return children().flatMap((x) => sync.data.question[x.id] ?? [])
+  })
+  // Questions asked in reply to /learn-quiz open the quiz view instead of the generic question picker.
+  const quiz = createMemo(() => {
+    const request = questions()[0]
+    const assistant = messages().find((message) => message.id === request?.tool?.messageID)
+    if (assistant?.role !== "assistant") return
+    const fromQuiz = (sync.data.part[assistant.parentID] ?? []).some(
+      (part) => part.type === "text" && !part.synthetic && part.text.startsWith("/learn-quiz"),
+    )
+    if (fromQuiz) return request
   })
   const visible = createMemo(() => !session()?.parentID && permissions().length === 0 && questions().length === 0)
   const disabled = createMemo(() => permissions().length > 0 || questions().length > 0)
@@ -1301,7 +1312,27 @@ export function Session() {
                     directory={sync.session.get(permissions()[0].sessionID)?.directory}
                   />
                 </Show>
-                <Show when={permissions().length === 0 && questions().length > 0}>
+                <Show when={permissions().length === 0 && quiz()} keyed>
+                  {(request) => (
+                    <QuizPrompt
+                      request={request}
+                      onSubmit={(answers) =>
+                        void sdk.client.question.reply({
+                          requestID: request.id,
+                          directory: sync.session.get(request.sessionID)?.directory,
+                          answers,
+                        })
+                      }
+                      onQuit={() =>
+                        void sdk.client.question.reject({
+                          requestID: request.id,
+                          directory: sync.session.get(request.sessionID)?.directory,
+                        })
+                      }
+                    />
+                  )}
+                </Show>
+                <Show when={permissions().length === 0 && questions().length > 0 && !quiz()}>
                   <QuestionPrompt
                     request={questions()[0]}
                     directory={sync.session.get(questions()[0].sessionID)?.directory}
