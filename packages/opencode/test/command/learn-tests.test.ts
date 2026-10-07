@@ -11,23 +11,23 @@ const mcp = Layer.mock(MCP.Service, { prompts: () => Effect.succeed({}) })
 
 const it = testEffect(Layer.mergeAll(LayerNode.compile(Command.node, [[MCP.node, mcp]]), testInstanceStoreLayer))
 
-describe("/learn-tests command", () => {
+describe("/learn-test command", () => {
   it.instance("is recognized as a valid command", () =>
     Effect.gen(function* () {
       const commands = yield* Command.Service
-      const command = yield* commands.get("learn-tests")
+      const command = yield* commands.get("learn-test")
 
-      expect(command?.name).toBe("learn-tests")
+      expect(command?.name).toBe("learn-test")
       expect(command?.source).toBe("command")
       expect(command?.description).toBeTruthy()
-      expect((yield* commands.list()).map((item) => item.name)).toContain("learn-tests")
+      expect((yield* commands.list()).map((item) => item.name)).toContain("learn-test")
     }),
   )
 
   it.instance("uses the Test Explanation prompt template", () =>
     Effect.gen(function* () {
       const commands = yield* Command.Service
-      const command = yield* commands.get("learn-tests")
+      const command = yield* commands.get("learn-test")
 
       expect(command).toBeDefined()
       expect(yield* Effect.promise(async () => command?.template)).toContain(TEST_EXPLANATION)
@@ -37,7 +37,7 @@ describe("/learn-tests command", () => {
   it.instance("takes the selected tests as $ARGUMENTS", () =>
     Effect.gen(function* () {
       const commands = yield* Command.Service
-      const command = yield* commands.get("learn-tests")
+      const command = yield* commands.get("learn-test")
 
       expect(command).toBeDefined()
       expect(command?.hints).toContain("$ARGUMENTS")
