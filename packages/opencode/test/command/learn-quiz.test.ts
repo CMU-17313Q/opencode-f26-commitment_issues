@@ -3,7 +3,7 @@ import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Effect, Layer } from "effect"
 import { Command } from "../../src/command"
 import { MCP } from "../../src/mcp"
-import REFLECTION_QUESTIONS from "../../src/command/template/reflection-questions.txt"
+import REFLECTION_QUESTIONS from "../../src/command/template/learn-quiz.txt"
 import { testInstanceStoreLayer } from "../fixture/fixture"
 import { testEffect } from "../lib/effect"
 

@@ -6,7 +6,7 @@ import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
 import { Skill } from "@/skill"
 import { testEffect } from "../lib/effect"
-import PROMPT_LEARN_QUIZ from "@/command/template/reflection-questions.txt"
+import PROMPT_LEARN_QUIZ from "@/command/template/learn-quiz.txt"
 
 const it = testEffect(LayerNode.compile(LayerNode.group([Command.node, Config.node, MCP.node, Skill.node])))
 

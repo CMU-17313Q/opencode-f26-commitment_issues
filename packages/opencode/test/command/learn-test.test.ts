@@ -6,7 +6,7 @@ import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
 import { Skill } from "@/skill"
 import { testEffect } from "../lib/effect"
-import PROMPT_LEARN_TEST from "@/command/template/learn-test.txt"
+import PROMPT_LEARN_TEST from "@/command/template/test-explanation.txt"
 
 const it = testEffect(LayerNode.compile(LayerNode.group([Command.node, Config.node, MCP.node, Skill.node])))
 
@@ -73,7 +73,7 @@ it.instance("learn-test template is non-empty", () =>
   }),
 )
 
-it.instance("learn-test template is exactly the contents of learn-test.txt", () =>
+it.instance("learn-test template is exactly the contents of test-explanation.txt", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
     const learnTest = yield* commands.get(Command.Default.LEARN_TEST)
@@ -115,7 +115,7 @@ it.instance("learn-test hints match hints() computed from its template", () =>
   }),
 )
 
-it.instance("hints() does not throw on the learn-test placeholder template", () =>
+it.instance("hints() does not throw on the learn-test template", () =>
   Effect.gen(function* () {
     const commands = yield* Command.Service
     const learnTest = yield* commands.get(Command.Default.LEARN_TEST)

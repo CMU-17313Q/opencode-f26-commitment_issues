@@ -9,8 +9,8 @@ import { MCP } from "../mcp"
 import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
-import PROMPT_LEARN_QUIZ from "./template/reflection-questions.txt"
-import PROMPT_LEARN_TEST from "./template/learn-test.txt"
+import PROMPT_LEARN_QUIZ from "./template/learn-quiz.txt"
+import PROMPT_LEARN_TEST from "./template/test-explanation.txt"
 import PROMPT_LEARN_RECAP from "./template/learn-recap.txt"
 import { LegacyEvent } from "@opencode-ai/schema/legacy-event"
 
@@ -49,7 +49,7 @@ export function hints(template: string) {
 export const Default = {
   INIT: "init",
   REVIEW: "review",
-  LEARN_QUIZ: "learn-quiz"
+  LEARN_QUIZ: "learn-quiz",
   LEARN_TEST: "learn-test",
   LEARN_RECAP: "learn-recap",
 } as const
