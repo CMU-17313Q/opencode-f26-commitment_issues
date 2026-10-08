@@ -85,15 +85,51 @@ describe("reflection questions template", () => {
 
   test("asks multiple choice questions without hinting at the answer", () => {
     expect(REFLECTION_QUESTIONS).toContain("give 3 or 4 options with exactly one correct")
-    expect(REFLECTION_QUESTIONS).toContain("Never mark or hint at the correct option")
+    expect(REFLECTION_QUESTIONS).toContain("Put the full text of each choice in `label`")
+    expect(REFLECTION_QUESTIONS).toContain("Never use letters such as A, B, C, or D as labels.")
+    expect(REFLECTION_QUESTIONS).toContain("never mark or hint at the correct option")
   })
 
   test("grades multiple choice questions and shows the result", () => {
-    expect(REFLECTION_QUESTIONS).toContain("grade only the multiple choice questions")
+    expect(REFLECTION_QUESTIONS).toContain("For multiple choice questions, and only those, grade the answer")
     expect(REFLECTION_QUESTIONS).toContain("`Question N: Correct`")
     expect(REFLECTION_QUESTIONS).toContain('`Question N: Incorrect. The answer is "<label>".`')
     expect(REFLECTION_QUESTIONS).toContain('`Question N: Skipped. The answer is "<label>".`')
     expect(REFLECTION_QUESTIONS).toContain("Do not grade open questions")
+  })
+
+  test("adds a hidden hint to every question", () => {
+    expect(REFLECTION_QUESTIONS).toContain("Give every question a `hint` field with a one-sentence hint.")
+    expect(REFLECTION_QUESTIONS).toContain("Do not put the hint in the `question` text.")
+    expect(REFLECTION_QUESTIONS).toContain("The quiz hides the hint until the student asks for it")
+  })
+
+  test("keeps hints from giving away the answer", () => {
+    expect(REFLECTION_QUESTIONS).toContain("A hint never gives away the answer.")
+    expect(REFLECTION_QUESTIONS).toContain("Do not state the answer, name or rule out an option")
+    expect(REFLECTION_QUESTIONS).toContain("Do not show hints in the list")
+  })
+
+  test("gives feedback on every answer's reasoning without revealing the solution", () => {
+    expect(REFLECTION_QUESTIONS).toContain("give feedback on every question, in order, under a `### Feedback` heading")
+    expect(REFLECTION_QUESTIONS).toContain("what their reasoning got right and the gap or assumption it missed")
+    expect(REFLECTION_QUESTIONS).toContain(
+      "Do not reveal the full answer to an open question, and do not rewrite the student's code.",
+    )
+    expect(REFLECTION_QUESTIONS).toContain("`Question N: Skipped.` followed by what the question was getting at")
+  })
+
+  test("ends with a summary of strengths, areas to review, and next steps", () => {
+    expect(REFLECTION_QUESTIONS).toContain("end with a `### Summary` heading")
+    expect(REFLECTION_QUESTIONS).toContain("- **Strong areas**:")
+    expect(REFLECTION_QUESTIONS).toContain("- **Areas to review**:")
+    expect(REFLECTION_QUESTIONS).toContain("- **Next steps**: at least one concrete step")
+    expect(REFLECTION_QUESTIONS).toContain("`/learn-recap <file>`")
+  })
+
+  test("reflects skipped questions in the summary", () => {
+    expect(REFLECTION_QUESTIONS).toContain("Every skipped question must appear here.")
+    expect(REFLECTION_QUESTIONS).toContain("If every question was skipped")
   })
 
   test("handles skipped questions and a dismissed quiz", () => {

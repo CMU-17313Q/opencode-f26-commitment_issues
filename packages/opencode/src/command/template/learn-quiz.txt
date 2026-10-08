@@ -80,17 +80,41 @@ The student answers in an interactive quiz, so do not write the questions in you
 - Before calling the tool, count the entries in `questions`. There must be exactly as many as the number of questions in the settings.
 - Give each question a `header` of the form "Question 1", "Question 2", and so on.
 - For open questions, use an empty `options` list so the student answers in their own words.
-- For multiple choice questions, give 3 or 4 options with exactly one correct. Put each choice in `label`, leave `description` empty, and vary the position of the correct option. Never mark or hint at the correct option.
+- For multiple choice questions, give 3 or 4 options with exactly one correct. Put the full text of each choice in `label`, even when it is longer than five words. Never use letters such as A, B, C, or D as labels. Leave `description` empty, vary the position of the correct option, and never mark or hint at the correct option.
 - Write for a student who is still learning. Be clear and encouraging, not condescending.
 
-## Grading
+### Hints
 
-When the answers come back, grade only the multiple choice questions. For each one, write one line:
+- Give every question a `hint` field with a one-sentence hint. Do not put the hint in the `question` text. The quiz hides the hint until the student asks for it.
+- A hint points the student toward where to look or what to consider: a line or function in their code, an input to try, or a question to ask themselves.
+- **A hint never gives away the answer.** Do not state the answer, name or rule out an option, explain the reasoning behind the code, or suggest a code change.
 
-- `Question N: Correct` when the student picked the correct option.
+## Feedback
+
+When the answers come back, give feedback on every question, in order, under a `### Feedback` heading. Keep each item to one or two sentences.
+
+For multiple choice questions, and only those, grade the answer:
+
+- `Question N: Correct` when the student picked the correct option, followed by one sentence on why it is right in their code.
 - `Question N: Incorrect. The answer is "<label>".` followed by one sentence explaining why, pointing at their code.
 - `Question N: Skipped. The answer is "<label>".` when it was not answered.
 
-Do not grade open questions. Thank the student for them in one short line. A question marked "Unanswered" was skipped; do not press for an answer. If the student dismisses the quiz, stop without comment.
+For open questions, give feedback on the student's reasoning. Do not grade open questions as correct or incorrect:
 
-If the `question` tool is not available, present the questions as a short numbered list instead, with the options of each multiple choice question labelled A to D, then add one line inviting the student to answer in their own words and say that you will discuss their answers with them. Add nothing else.
+- `Question N:` followed by what their reasoning got right and the gap or assumption it missed. Point at the part of their code to look at again, or ask one follow-up question that leads them there.
+- `Question N: Skipped.` followed by what the question was getting at, without answering it.
+- **Do not reveal the full answer to an open question, and do not rewrite the student's code.** Feedback helps them reason it through themselves.
+
+A question marked "Unanswered" was skipped; do not press for an answer. If the student dismisses the quiz, stop without comment.
+
+## Summary
+
+After the feedback, end with a `### Summary` heading and three short lists:
+
+- **Strong areas**: one to three things the student clearly understood, each tied to a question.
+- **Areas to review**: one to three gaps from their answers. Every skipped question must appear here.
+- **Next steps**: at least one concrete step specific to this quiz, such as a named concept to read up on, a specific function or file of theirs to revisit, or running `/learn-recap <file>` on a specific file.
+
+If every question was skipped, say so in one line, list the topics the questions covered under Areas to review, and still give Next steps.
+
+If the `question` tool is not available, present the questions as a short numbered list instead, with the options of each multiple choice question labelled A to D. Do not show hints in the list; give one only if the student asks. Then add one line inviting the student to answer in their own words and say that you will discuss their answers with them. Add nothing else.
