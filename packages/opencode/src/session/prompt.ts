@@ -25,6 +25,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
 import * as Stream from "effect/Stream"
 import { Command } from "../command"
+import { LearnQuiz } from "../command/learn-quiz"
 import { pathToFileURL, fileURLToPath } from "url"
 import { Config } from "@/config/config"
 import { ConfigMarkdown } from "@/config/markdown"
@@ -1353,6 +1354,25 @@ const layer = Layer.effect(
       return yield* state.startShell(input.sessionID, lastAssistant(input.sessionID), shellImpl(input, ready), ready)
     })
 
+    const learnQuizSettings = Effect.fn("SessionPrompt.learnQuizSettings")(function* (input: CommandInput) {
+      const parsed = LearnQuiz.parse(input.arguments)
+      if (!parsed.ok) return yield* commandError(input.sessionID, `/learn-quiz: ${parsed.message}`)
+      const scope = parsed.options.scope
+      if (scope.type === "file") {
+        const ctx = yield* InstanceState.context
+        const info = yield* fsys.stat(path.resolve(ctx.directory, scope.file)).pipe(Effect.option)
+        if (Option.isNone(info))
+          return yield* commandError(input.sessionID, `/learn-quiz: File not found: "${scope.file}".`)
+      }
+      return LearnQuiz.settings(parsed.options)
+    })
+
+    const commandError = Effect.fn("SessionPrompt.commandError")(function* (sessionID: SessionID, message: string) {
+      const error = new NamedError.Unknown({ message })
+      yield* events.publish(Session.Event.Error, { sessionID, error: error.toObject() })
+      throw error
+    })
+
     const command = Effect.fn("SessionPrompt.command")(function* (input: CommandInput) {
       yield* Effect.logInfo("command", {
         "session.id": input.sessionID,
@@ -1388,7 +1408,11 @@ const layer = Layer.effect(
         return args[argIndex]
       })
       const usesArgumentsPlaceholder = templateCommand.includes("$ARGUMENTS")
-      let template = withArgs.replaceAll("$ARGUMENTS", input.arguments)
+      // /learn-quiz takes flags, so reject bad ones up front and give the model validated settings instead of raw text.
+      let template = withArgs.replaceAll(
+        "$ARGUMENTS",
+        input.command === Command.Default.LEARN_QUIZ ? yield* learnQuizSettings(input) : input.arguments,
+      )
 
       if (placeholders.length === 0 && !usesArgumentsPlaceholder && input.arguments.trim()) {
         template = template + "\n\n" + input.arguments
