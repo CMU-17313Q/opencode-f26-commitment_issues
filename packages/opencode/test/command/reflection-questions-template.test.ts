@@ -18,6 +18,13 @@ describe("reflection questions template", () => {
     expect(REFLECTION_QUESTIONS).toContain("Never use generic textbook examples")
   })
 
+  test("treats the question count as the exact total, concept checks included", () => {
+    expect(REFLECTION_QUESTIONS).toContain("no more and no fewer")
+    expect(REFLECTION_QUESTIONS).toContain("with every question type counted in it")
+    expect(REFLECTION_QUESTIONS).toContain("They count toward the total")
+    expect(REFLECTION_QUESTIONS).toContain("count the entries in `questions`")
+  })
+
   test("offers all five question types", () => {
     expect(REFLECTION_QUESTIONS).toContain("**Design justification**")
     expect(REFLECTION_QUESTIONS).toContain("**Alternative scenario**")
@@ -36,7 +43,7 @@ describe("reflection questions template", () => {
 
   test("matches the answer format to each format setting", () => {
     expect(REFLECTION_QUESTIONS).toContain("format in the settings")
-    expect(REFLECTION_QUESTIONS).toContain("- **mixed**: Include one or two concept checks as multiple choice.")
+    expect(REFLECTION_QUESTIONS).toContain("- **mixed**: Make one or two of the questions concept checks")
     expect(REFLECTION_QUESTIONS).toContain("- **mcq**: Ask every question as multiple choice")
     expect(REFLECTION_QUESTIONS).toContain("- **frq**: Ask every question as an open question")
     expect(REFLECTION_QUESTIONS).toContain("Do not ask concept checks.")
