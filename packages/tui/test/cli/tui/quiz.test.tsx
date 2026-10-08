@@ -39,6 +39,25 @@ const mixed: QuestionRequest = {
   ],
 }
 
+// Questions end with a hidden hint, as /learn-quiz asks the model to write them. Question 3 has none.
+const hinted: QuestionRequest = {
+  id: "que_hinted",
+  sessionID: "ses_quiz",
+  questions: [
+    {
+      header: "Question 1",
+      question: "Why do you store prices in cents?\n\nHint: Try adding 0.1 and 0.2 as dollars.",
+      options: [],
+    },
+    {
+      header: "Question 2",
+      question: "Why does `removeItem` use `findIndex`?\n\nHint: Look at what `splice` needs.",
+      options: ["To remove by position", "To sort the cart"].map((label) => ({ label, description: "" })),
+    },
+    { header: "Question 3", question: "What does `totalCents` return for an empty cart?", options: [] },
+  ],
+}
+
 async function wait(fn: () => boolean, timeout = 2000) {
   const start = Date.now()
   while (!fn()) {
@@ -337,5 +356,128 @@ test("help explains every option and the quiz keys", async () => {
   expect(QUIZ_HELP).toContain("beginner, intermediate, or advanced (default intermediate)")
   expect(QUIZ_HELP).toContain("mcq (multiple choice only), frq (free response only), or mixed (default mixed)")
   expect(QUIZ_HELP).toContain("With no file or --diff, the quiz covers your recent changes.")
-  expect(QUIZ_HELP).toContain("enter next, shift+tab back, ctrl+s skip, esc quit")
+  expect(QUIZ_HELP).toContain("enter next, shift+tab back, ctrl+s skip, ctrl+o hint, esc quit")
+})
+
+test("splitHint separates the hint from the question", async () => {
+  const { splitHint } = await import("../../../src/routes/session/quiz")
+
+  expect(splitHint("Why cents?\n\nHint: Try 0.1 + 0.2.")).toEqual({ question: "Why cents?", hint: "Try 0.1 + 0.2." })
+  expect(splitHint("Why cents?\nhint:   Try 0.1 + 0.2.  ")).toEqual({ question: "Why cents?", hint: "Try 0.1 + 0.2." })
+  expect(splitHint("Why cents?")).toEqual({ question: "Why cents?", hint: undefined })
+  // "Hint:" only counts at the start of a line, so a question that mentions hints keeps its text.
+  expect(splitHint("Is Hint: a good label here?")).toEqual({ question: "Is Hint: a good label here?", hint: undefined })
+})
+
+test("hints stay hidden until ctrl+o, and ctrl+o hides them again", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, hinted)
+
+  try {
+    const frame = await quiz.frame()
+    expect(frame).toContain("Why do you store prices in cents?")
+    expect(frame).not.toContain("Try adding 0.1 and 0.2")
+    expect(frame).toContain("ctrl+o hint")
+
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    const shown = await quiz.frame()
+    expect(shown).toContain("Hint: Try adding 0.1 and 0.2 as dollars.")
+    expect(shown).toContain("ctrl+o hide hint")
+
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    expect(await quiz.frame()).not.toContain("Try adding 0.1 and 0.2")
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("each question keeps its own hint state, including multiple choice", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, hinted)
+
+  try {
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    await quiz.answer("floats round badly")
+    quiz.app.mockInput.pressEnter()
+
+    const second = await quiz.frame()
+    expect(second).toContain("Question 2 of 3")
+    expect(second).not.toContain("Look at what `splice` needs.")
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    expect(await quiz.frame()).toContain("Hint: Look at what `splice` needs.")
+
+    quiz.app.mockInput.pressTab({ shift: true })
+    expect(await quiz.frame()).toContain("Hint: Try adding 0.1 and 0.2 as dollars.")
+    expect(quiz.textarea.plainText).toBe("floats round badly")
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("questions without a hint show no hint key, and hints do not change the answers", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, hinted)
+
+  try {
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    await quiz.answer("floats round badly")
+    quiz.app.mockInput.pressEnter()
+    quiz.app.mockInput.pressKey("1")
+
+    const third = await quiz.frame()
+    expect(third).toContain("Question 3 of 3")
+    expect(third).not.toContain("ctrl+o")
+    quiz.app.mockInput.pressKey("o", { ctrl: true })
+    expect(await quiz.frame()).not.toContain("Hint:")
+
+    await quiz.answer("zero")
+    quiz.app.mockInput.pressEnter()
+    expect(quiz.submitted).toEqual([[["floats round badly"], ["To remove by position"], ["zero"]]])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("multiple choice shows the answer text even when the label is only a letter", async () => {
+  const { optionText } = await import("../../../src/routes/session/quiz")
+
+  expect(optionText({ label: "Avoid a network call", description: "" })).toBe("Avoid a network call")
+  expect(optionText({ label: "A", description: "Avoid a network call" })).toBe("Avoid a network call")
+  expect(optionText({ label: "b)", description: "Sort the results" })).toBe("Sort the results")
+  expect(optionText({ label: "E", description: "Retry the request" })).toBe("Retry the request")
+  expect(optionText({ label: "F.", description: "Clear the cache" })).toBe("Clear the cache")
+  expect(optionText({ label: "Cache", description: "Avoid a network call" })).toBe("Cache: Avoid a network call")
+
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, {
+    id: "que_letters",
+    sessionID: "ses_quiz",
+    questions: [
+      { header: "Question 1", question: "Why did you cache the result?", options: [] },
+      {
+        header: "Question 2",
+        question: "Why does `load` check the cache first?",
+        options: ["Avoid a network call", "Sort the results", "Validate the input"].map((description, index) => ({
+          label: "ABC"[index],
+          description,
+        })),
+      },
+    ],
+  })
+
+  try {
+    await quiz.answer("to avoid repeat work")
+    quiz.app.mockInput.pressEnter()
+
+    const frame = await quiz.frame()
+    expect(frame).toContain("□ Avoid a network call")
+    expect(frame).toContain("□ Validate the input")
+    expect(frame).not.toMatch(/[□■] [ABC]\s/)
+
+    quiz.app.mockInput.pressArrow("down")
+    quiz.app.mockInput.pressEnter()
+    expect(quiz.submitted).toEqual([[["to avoid repeat work"], ["B"]]])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
 })
