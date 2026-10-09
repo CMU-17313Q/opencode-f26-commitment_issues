@@ -90,6 +90,36 @@ describe("tool.question", () => {
     }),
   )
 
+  it.instance("passes a quiz hint on at the end of the question text, where the quiz view hides it", () =>
+    Effect.gen(function* () {
+      const question = yield* Question.Service
+      const toolInfo = yield* QuestionTool
+      const tool = yield* toolInfo.init()
+      const questions = [
+        {
+          question: "Why do you store prices in cents?",
+          header: "Question 1",
+          options: [],
+          hint: "Try adding 0.1 and 0.2 as dollars.",
+        },
+        { question: "What does `totalCents` return for an empty cart?", header: "Question 2", options: [] },
+      ]
+
+      const fiber = yield* tool.execute({ questions }, ctx).pipe(Effect.forkScoped)
+      const item = yield* pending(question)
+      expect(item.questions.map((q) => q.question)).toEqual([
+        "Why do you store prices in cents?\n\nHint: Try adding 0.1 and 0.2 as dollars.",
+        "What does `totalCents` return for an empty cart?",
+      ])
+      expect(item.questions[0]).not.toHaveProperty("hint")
+      yield* question.reply({ requestID: item.id, answers: [["floats round badly"], []] })
+
+      const result = yield* Fiber.join(fiber)
+      expect(result.output).toContain(`"Why do you store prices in cents?"="floats round badly"`)
+      expect(result.output).not.toContain("Hint:")
+    }),
+  )
+
   // intentionally removed the zod validation due to tool call errors, hoping prompting is gonna be good enough
   //   test("should throw an Error for header exceeding 30 characters", async () => {
   //     const tool = await QuestionTool.init()

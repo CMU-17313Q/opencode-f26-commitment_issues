@@ -206,6 +206,10 @@ exports[`tool parameters JSON Schema (wire shape) question 1`] = `
             "description": "Very short label (max 30 chars)",
             "type": "string",
           },
+          "hint": {
+            "description": "Optional hint the user can reveal before answering. Must not give away the answer",
+            "type": "string",
+          },
           "multiple": {
             "description": "Allow selecting multiple choices",
             "type": "boolean",

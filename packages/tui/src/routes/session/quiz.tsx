@@ -24,7 +24,7 @@ export const QUIZ_HELP = [
   "",
   "With no file or --diff, the quiz covers your recent changes.",
   "",
-  "In the quiz: enter next, shift+tab back, ctrl+s skip, esc quit.",
+  "In the quiz: enter next, shift+tab back, ctrl+s skip, ctrl+o hint, esc quit.",
   "Multiple choice: up/down or 1-9 to choose.",
 ].join("\n")
 
@@ -32,6 +32,20 @@ export const QUIZ_HELP = [
 export function isQuizHelp(input: string) {
   const [command, ...args] = input.trim().split(/\s+/)
   return command === "/learn-quiz" && args.some((arg) => arg === "-h" || arg === "--help")
+}
+
+// /learn-quiz ends each question with a blank line and "Hint: ...", so the hint can stay hidden until asked for.
+export function splitHint(text: string) {
+  const match = text.match(/^([\s\S]*?)\s*\n\s*Hint:\s*([\s\S]*\S)\s*$/i)
+  if (!match) return { question: text, hint: undefined }
+  return { question: match[1], hint: match[2] }
+}
+
+// Models sometimes put a letter in `label` and the answer in `description`; always show the answer text.
+export function optionText(option: { label: string; description: string }) {
+  if (!option.description.trim()) return option.label
+  if (/^[a-z][.)]?$/i.test(option.label.trim())) return option.description
+  return `${option.label}: ${option.description}`
 }
 
 // Interactive view for /learn-quiz: one question at a time, replacing the generic question picker.
@@ -49,12 +63,14 @@ export function QuizPrompt(props: {
     index: 0,
     cursor: 0,
     answers: props.request.questions.map(() => ""),
+    hints: props.request.questions.map(() => false),
   })
 
   const total = () => props.request.questions.length
   const last = () => store.index === total() - 1
   const options = () => props.request.questions[store.index]?.options ?? []
   const choice = () => options().length > 0
+  const current = () => splitHint(props.request.questions[store.index]?.question ?? "")
 
   // Every move saves the current answer first so answers survive navigating back and forth.
   function move(index: number, answer = choice() ? store.answers[store.index] : (textarea()?.plainText ?? "")) {
@@ -107,6 +123,14 @@ export function QuizPrompt(props: {
     { key: "tab", desc: "Next question", group: "Quiz", cmd: () => move(store.index + 1) },
     { key: "shift+tab", desc: "Previous question", group: "Quiz", cmd: back },
     { key: "ctrl+s", desc: "Skip question", group: "Quiz", cmd: () => move(store.index + 1, "") },
+    {
+      key: "ctrl+o",
+      desc: "Show or hide hint",
+      group: "Quiz",
+      cmd: () => {
+        if (current().hint) setStore("hints", store.index, (shown) => !shown)
+      },
+    },
     { key: "escape", desc: "Quit quiz", group: "Quiz", cmd: () => props.onQuit() },
     ...tuiConfig.keybinds.get("app.exit"),
   ]
@@ -174,7 +198,10 @@ export function QuizPrompt(props: {
             Question {store.index + 1} of {total()}
           </text>
         </box>
-        <text fg={theme.text}>{props.request.questions[store.index]?.question}</text>
+        <text fg={theme.text}>{current().question}</text>
+        <Show when={store.hints[store.index] && current().hint}>
+          <text fg={theme.warning}>Hint: {current().hint}</text>
+        </Show>
         <Show when={choice()}>
           <box>
             <For each={options()}>
@@ -189,7 +216,7 @@ export function QuizPrompt(props: {
                     onMouseUp={() => pick(index())}
                   >
                     <text fg={active() ? theme.secondary : theme.text}>
-                      {`${chosen() ? "■" : "□"} ${option.label}`}
+                      {`${chosen() ? "■" : "□"} ${optionText(option)}`}
                     </text>
                   </box>
                 )
@@ -230,6 +257,11 @@ export function QuizPrompt(props: {
         <text fg={theme.text}>
           ctrl+s <span style={{ fg: theme.textMuted }}>skip</span>
         </text>
+        <Show when={current().hint}>
+          <text fg={theme.text}>
+            ctrl+o <span style={{ fg: theme.textMuted }}>{store.hints[store.index] ? "hide hint" : "hint"}</span>
+          </text>
+        </Show>
         <text fg={theme.text}>
           esc <span style={{ fg: theme.textMuted }}>quit</span>
         </text>
