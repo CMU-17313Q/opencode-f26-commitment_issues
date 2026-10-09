@@ -126,6 +126,61 @@ describe("learn-recap template content", () => {
 })
 
 // ---------------------------------------------------------------------------
+// 1b. Prompt-quality checks (style: learn-quiz.test.ts's acceptance tests)
+// ---------------------------------------------------------------------------
+
+test("learn-recap template accepts the student's scope via $ARGUMENTS", () => {
+  expect(Command.hints(PROMPT_LEARN_RECAP)).toContain("$ARGUMENTS")
+})
+
+test("learn-recap template falls back to uncommitted changes when there is no input", () => {
+  expect(PROMPT_LEARN_RECAP).toContain("inspect the current uncommitted changes")
+  expect(PROMPT_LEARN_RECAP).toContain("git diff")
+  expect(PROMPT_LEARN_RECAP).toContain("git status --short")
+})
+
+test("learn-recap template reads surrounding code instead of relying on the diff alone", () => {
+  expect(PROMPT_LEARN_RECAP).toContain("read the surrounding code needed to understand their behavior")
+  expect(PROMPT_LEARN_RECAP).toContain("Do not rely on the diff alone.")
+})
+
+test("learn-recap template says so clearly instead of inventing a recap when there's nothing to explain", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/no relevant code changes|say so clearly instead of inventing a recap/i)
+})
+
+test("learn-recap template does not invent developer intentions unsupported by the code", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/do not invent[^.]*intentions/i)
+})
+
+test("learn-recap template focuses on meaningful changes rather than line-by-line narration", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/meaningful changes/i)
+  expect(PROMPT_LEARN_RECAP).toMatch(/describing every edited line/i)
+})
+
+test("learn-recap template only mentions software engineering concepts genuinely relevant to the code", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/testing, validation, error handling, abstraction, modularity/i)
+  expect(PROMPT_LEARN_RECAP).toMatch(/only mention concepts that are genuinely relevant/i)
+})
+
+test("learn-recap template uses clear, student-friendly language and explains unfamiliar terms", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/clear, student-friendly language/i)
+  expect(PROMPT_LEARN_RECAP).toMatch(/explain unfamiliar technical terms/i)
+})
+
+test("learn-recap template does not assume a particular language, framework, or testing library", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/do not assume a particular programming language, framework, or testing library/i)
+})
+
+test("learn-recap template stays grounded in the actual code and available context", () => {
+  expect(PROMPT_LEARN_RECAP).toMatch(/stay grounded in the actual code/i)
+})
+
+test("learn-recap template ends with a key takeaway", () => {
+  expect(PROMPT_LEARN_RECAP).toContain("### Key Takeaway")
+  expect(PROMPT_LEARN_RECAP).toMatch(/one short takeaway/i)
+})
+
+// ---------------------------------------------------------------------------
 // 2. Template is the single source of truth
 // ---------------------------------------------------------------------------
 
