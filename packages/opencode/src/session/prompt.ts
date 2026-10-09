@@ -1436,6 +1436,15 @@ const layer = Layer.effect(
       const uniqueTemplateParts = templateParts.filter(
         (part) => part.type !== "file" || !inputFiles.has(fileURLToPath(part.url)),
       )
+      // The learn-quiz template is instructions for the model, not something the student should read, so
+      // show only what they typed. Synthetic text is hidden by clients but still sent to the model.
+      const visibleTemplateParts =
+        input.command === Command.Default.LEARN_QUIZ
+          ? [
+              { type: "text" as const, text: `/${input.command} ${input.arguments}`.trim() },
+              ...uniqueTemplateParts.map((part) => (part.type === "text" ? { ...part, synthetic: true } : part)),
+            ]
+          : uniqueTemplateParts
       const isSubtask = (agent.mode === "subagent" && cmd.subtask !== false) || cmd.subtask === true
       const parts = isSubtask
         ? [
@@ -1448,7 +1457,7 @@ const layer = Layer.effect(
               prompt: templateParts.find((y) => y.type === "text")?.text ?? "",
             },
           ]
-        : [...uniqueTemplateParts, ...(input.parts ?? [])]
+        : [...visibleTemplateParts, ...(input.parts ?? [])]
 
       const userAgent = isSubtask ? (input.agent ?? (yield* agents.defaultInfo()).name) : agent.name
       const userModel = isSubtask

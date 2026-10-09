@@ -53,6 +53,10 @@ Vary the kinds. Do not ask four questions of the same kind.
 
 ## Output
 
-- Present the questions as a short numbered list. Each question should be one or two sentences.
+The student answers in an interactive quiz, so do not write the questions in your reply.
+
+- Ask all of the questions in a single call to the `question` tool. Each question should be one or two sentences.
+- Give each question a `header` of the form "Question 1", "Question 2", and so on, and an empty `options` list so the student answers in their own words.
 - Write for a student who is still learning. Be clear and encouraging, not condescending.
-- After the list, add one line inviting the student to answer in their own words and say that you will discuss their answers with them. Add nothing else.
+- When the answers come back, thank the student in one short line. A question marked "Unanswered" was skipped; do not press for an answer. If the student dismisses the quiz, stop without comment.
+- If the `question` tool is not available, present the questions as a short numbered list instead, then add one line inviting the student to answer in their own words and say that you will discuss their answers with them. Add nothing else.
