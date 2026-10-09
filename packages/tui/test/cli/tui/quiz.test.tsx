@@ -21,6 +21,24 @@ const request: QuestionRequest = {
   })),
 }
 
+// Open, multiple choice, open: the mix /learn-quiz asks for.
+const mixed: QuestionRequest = {
+  id: "que_mixed",
+  sessionID: "ses_quiz",
+  questions: [
+    { header: "Question 1", question: "Why did you cache the result?", options: [] },
+    {
+      header: "Question 2",
+      question: "Why does `load` check the cache first?",
+      options: ["Avoid a network call", "Sort the results", "Validate the input"].map((label) => ({
+        label,
+        description: "",
+      })),
+    },
+    { header: "Question 3", question: "What would happen if the cache were empty?", options: [] },
+  ],
+}
+
 async function wait(fn: () => boolean, timeout = 2000) {
   const start = Date.now()
   while (!fn()) {
@@ -29,7 +47,7 @@ async function wait(fn: () => boolean, timeout = 2000) {
   }
 }
 
-async function mountQuiz(root: string) {
+async function mountQuiz(root: string, quiz = request) {
   const state = path.join(root, "state")
   await mkdir(state, { recursive: true })
   await Bun.write(path.join(state, "kv.json"), "{}")
@@ -65,7 +83,7 @@ async function mountQuiz(root: string) {
             <KVProvider>
               <ThemeProvider mode="dark">
                 <QuizPrompt
-                  request={request}
+                  request={quiz}
                   onSubmit={(answers) => submitted.push(answers)}
                   onQuit={() => quits.push(Date.now())}
                 />
@@ -92,6 +110,7 @@ async function mountQuiz(root: string) {
       return app.captureCharFrame()
     },
     async answer(text: string) {
+      await wait(() => app.renderer.currentFocusedEditor === textarea)
       await app.mockInput.typeText(text)
       await wait(() => textarea.plainText === text)
     },
@@ -210,4 +229,113 @@ test("quitting leaves the quiz without submitting", async () => {
   } finally {
     quiz.app.renderer.destroy()
   }
+})
+
+test("multiple choice questions show their options and take the highlighted one on enter", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, mixed)
+
+  try {
+    await quiz.answer("to avoid repeat work")
+    quiz.app.mockInput.pressEnter()
+
+    const frame = await quiz.frame()
+    expect(frame).toContain("Question 2 of 3")
+    expect(frame).toContain("□ Avoid a network call")
+    expect(frame).toContain("□ Validate the input")
+    expect(frame).not.toMatch(/\d\. [□■]/)
+
+    quiz.app.mockInput.pressArrow("down")
+    quiz.app.mockInput.pressEnter()
+    expect(await quiz.frame()).toContain("Question 3 of 3")
+
+    await quiz.answer("it would load from the network")
+    quiz.app.mockInput.pressEnter()
+
+    expect(quiz.submitted).toEqual([
+      [["to avoid repeat work"], ["Sort the results"], ["it would load from the network"]],
+    ])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("number keys choose a multiple choice option", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, mixed)
+
+  try {
+    quiz.app.mockInput.pressKey("s", { ctrl: true })
+    quiz.app.mockInput.pressKey("1")
+    expect(await quiz.frame()).toContain("Question 3 of 3")
+    quiz.app.mockInput.pressKey("s", { ctrl: true })
+
+    expect(quiz.submitted).toEqual([[[], ["Avoid a network call"], []]])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("multiple choice and typed answers are kept when going back", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, mixed)
+
+  try {
+    await quiz.answer("first")
+    quiz.app.mockInput.pressEnter()
+    quiz.app.mockInput.pressKey("3")
+
+    quiz.app.mockInput.pressTab({ shift: true })
+    expect(await quiz.frame()).toContain("■ Validate the input")
+
+    quiz.app.mockInput.pressTab({ shift: true })
+    expect(await quiz.frame()).toContain("Question 1 of 3")
+    expect(quiz.textarea.plainText).toBe("first")
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("skipping a multiple choice question leaves it unanswered", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, mixed)
+
+  try {
+    quiz.app.mockInput.pressKey("s", { ctrl: true })
+    quiz.app.mockInput.pressKey("2")
+    quiz.app.mockInput.pressTab({ shift: true })
+    quiz.app.mockInput.pressKey("s", { ctrl: true })
+    quiz.app.mockInput.pressKey("s", { ctrl: true })
+
+    expect(quiz.submitted).toEqual([[[], [], []]])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("help opens for -h or --help on /learn-quiz, wherever the flag is", async () => {
+  const { isQuizHelp } = await import("../../../src/routes/session/quiz")
+
+  expect(isQuizHelp("/learn-quiz -h")).toBe(true)
+  expect(isQuizHelp("/learn-quiz --help")).toBe(true)
+  expect(isQuizHelp("  /learn-quiz src/app.ts --count 3 --help ")).toBe(true)
+
+  expect(isQuizHelp("/learn-quiz")).toBe(false)
+  expect(isQuizHelp("/learn-quiz src/app.ts --level beginner")).toBe(false)
+  expect(isQuizHelp("/learn-quizzes -h")).toBe(false)
+  expect(isQuizHelp("/review --help")).toBe(false)
+  expect(isQuizHelp("what does /learn-quiz --help show?")).toBe(false)
+})
+
+test("help explains every option and the quiz keys", async () => {
+  const { QUIZ_HELP } = await import("../../../src/routes/session/quiz")
+
+  for (const option of ["file", "--diff", "--count <n>", "--level <level>", "--format <format>", "-h, --help"]) {
+    expect(QUIZ_HELP).toContain(`  ${option} `)
+  }
+  expect(QUIZ_HELP).toContain("3 to 10 (default 5)")
+  expect(QUIZ_HELP).toContain("beginner, intermediate, or advanced (default intermediate)")
+  expect(QUIZ_HELP).toContain("mcq (multiple choice only), frq (free response only), or mixed (default mixed)")
+  expect(QUIZ_HELP).toContain("With no file or --diff, the quiz covers your recent changes.")
+  expect(QUIZ_HELP).toContain("enter next, shift+tab back, ctrl+s skip, esc quit")
 })

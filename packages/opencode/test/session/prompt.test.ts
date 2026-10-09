@@ -1820,7 +1820,8 @@ it.instance(
   "learn-quiz shows the typed command and keeps its template visible only to the model",
   () =>
     Effect.gen(function* () {
-      const { llm } = yield* useServerConfig(providerCfg)
+      const { dir, llm } = yield* useServerConfig(providerCfg)
+      yield* writeText(path.join(dir, "src", "app.ts"), "export const answer = 42\n")
       const { prompt, sessions, chat } = yield* boot()
       yield* llm.text("done")
 
@@ -1833,11 +1834,67 @@ it.instance(
       const user = (yield* sessions.messages({ sessionID: chat.id })).find((message) => message.info.role === "user")
       const texts = user?.parts.filter((part) => part.type === "text") ?? []
       expect(texts.filter((part) => !part.synthetic).map((part) => part.text)).toEqual(["/learn-quiz src/app.ts"])
-      expect(texts.find((part) => part.synthetic)?.text).toContain("Input: src/app.ts")
+      expect(texts.find((part) => part.synthetic)?.text).toContain("- Scope: the file `src/app.ts`")
       expect(JSON.stringify((yield* llm.inputs).at(-1)?.messages)).toContain("learning companion")
     }),
   30_000,
 )
+
+it.instance(
+  "learn-quiz hands the model validated settings instead of the raw flags",
+  () =>
+    Effect.gen(function* () {
+      const { llm } = yield* useServerConfig(providerCfg)
+      const { prompt, sessions, chat } = yield* boot()
+      yield* llm.text("done")
+
+      yield* prompt.command({
+        sessionID: chat.id,
+        command: Command.Default.LEARN_QUIZ,
+        arguments: "--diff --count 3 --level Advanced --format mcq",
+      })
+
+      const user = (yield* sessions.messages({ sessionID: chat.id })).find((message) => message.info.role === "user")
+      const template = user?.parts.find((part) => part.type === "text" && part.synthetic)
+      const text = template?.type === "text" ? template.text : ""
+      expect(text).toContain("- Scope: uncommitted changes\n- Number of questions: 3\n- Level: advanced\n- Format: mcq")
+      expect(text).not.toContain("--count")
+    }),
+  30_000,
+)
+
+for (const [args, message] of [
+  ["--count 50", "--count must be a whole number from 3 to 10"],
+  ["--level expert", "--level must be one of beginner, intermediate, advanced"],
+  ["--bogus", 'Unknown option "--bogus".'],
+  ["missing.ts", 'File not found: "missing.ts".'],
+  ["--help", "Usage: /learn-quiz"],
+]) {
+  noLLMServer.instance(
+    `learn-quiz rejects "${args}" with a clear error and sends nothing`,
+    () =>
+      Effect.gen(function* () {
+        const prompt = yield* SessionPrompt.Service
+        const sessions = yield* Session.Service
+        const session = yield* sessions.create({})
+        const exit = yield* prompt
+          .command({ sessionID: session.id, command: Command.Default.LEARN_QUIZ, arguments: args })
+          .pipe(Effect.exit)
+
+        expect(Exit.isFailure(exit)).toBe(true)
+        if (Exit.isFailure(exit)) {
+          const err = Cause.squash(exit.cause)
+          expect(NamedError.Unknown.isInstance(err)).toBe(true)
+          if (NamedError.Unknown.isInstance(err)) {
+            expect(err.data.message).toStartWith("/learn-quiz: ")
+            expect(err.data.message).toContain(message)
+          }
+        }
+        expect(yield* sessions.messages({ sessionID: session.id })).toEqual([])
+      }),
+    30_000,
+  )
+}
 
 it.instance(
   "other commands still show their template",
