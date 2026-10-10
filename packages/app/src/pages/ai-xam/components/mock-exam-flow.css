@@ -1,0 +1,24 @@
+.ai-xam-mock {display:grid;gap:20px;max-width:1080px;margin:auto;color:#e8edff;background:#10162b;border:1px solid #334261;border-radius:18px;padding:28px}
+.ai-xam-mock-top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.ai-xam-mock-top h2{font-size:30px;font-weight:750;margin:8px 0}
+.ai-xam-mock-top p,.ai-xam-mock-hint{font-size:13px;color:#adbddd}
+.ai-xam-mock-panel{border-radius:14px;border:1px solid #384563;background:#1b2541;padding:24px;display:grid;gap:22px}
+.ai-xam-mock-panel h3{font-size:20px;font-weight:700}
+.ai-xam-mock-setup h3,.ai-xam-mock-exam-head h3{margin:0}
+.ai-xam-mock-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ai-xam-mock-fields label{display:grid;gap:8px;font-size:13px;color:#cbd6f1}
+.ai-xam-mock-fields select,.ai-xam-mock-fields input,.ai-xam-mock-question textarea{min-width:0;width:100%;border:1px solid #566583;border-radius:9px;background:#111a31;color:#f1f4ff;padding:12px;font:inherit}
+.ai-xam-mock-formats{border:1px solid #3b4969;border-radius:10px;padding:15px}.ai-xam-mock-formats legend{padding:0 8px}.ai-xam-mock-formats>div{display:flex;flex-wrap:wrap;gap:15px}.ai-xam-mock-formats label{display:flex;align-items:center;gap:7px;font-size:13px}
+.ai-xam-mock-secondary{border:1px solid #526384;border-radius:9px;padding:11px 15px;color:#edf1ff;background:#263451;cursor:pointer}.ai-xam-mock-secondary:disabled{opacity:.4;cursor:not-allowed}
+.ai-xam-mock-busy{display:grid;justify-items:center;gap:16px;padding:90px 20px;text-align:center}.ai-xam-mock-busy h3{font-size:23px}.ai-xam-mock-busy p{color:#b4bed8}
+.ai-xam-mock-error{padding:15px;border:1px solid #e88e91;border-radius:9px;background:#50283a;color:#ffdbdf}
+.ai-xam-mock-exam-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.ai-xam-mock-exam-head p{color:#b0bed8;font-size:13px;margin:6px 0}
+.ai-xam-mock-timer{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;color:#d6c0ff;padding:9px 14px;border:1px solid #625d96;border-radius:10px}
+.ai-xam-mock-nav{display:flex;gap:8px;flex-wrap:wrap}.ai-xam-mock-nav button{background:#2a3857;color:#d4ddf8;border:1px solid #4a5775;border-radius:8px;min-width:40px;padding:8px;cursor:pointer}.ai-xam-mock-nav button.active{background:#6655bb;color:white}.ai-xam-mock-nav button.answered{border-color:#57bfa8}.ai-xam-mock-nav button.flagged{color:#ffd48c}
+.ai-xam-mock-question{display:grid;gap:16px;border-top:1px solid #374462;padding-top:24px}.ai-xam-mock-question h4{font-size:19px;font-weight:650;white-space:pre-wrap}.ai-xam-mock-question-meta{display:flex;justify-content:space-between;gap:12px;color:#b4c1df;font-size:12px;flex-wrap:wrap}
+.ai-xam-mock-question textarea{resize:vertical;line-height:1.5}.ai-xam-mock-options{display:grid;gap:10px}.ai-xam-mock-options label{padding:12px;background:#263251;border:1px solid #445272;border-radius:10px;display:flex;gap:10px;align-items:flex-start}
+.ai-xam-mock-flag{display:flex;gap:8px;align-items:center;font-size:13px}.ai-xam-mock-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
+.ai-xam-mock-score{display:flex;gap:24px;flex-wrap:wrap}.ai-xam-mock-score>div{border:1px solid #4a5383;border-radius:12px;padding:20px;min-width:200px;flex:1}.ai-xam-mock-score span{display:block;font-size:11px;letter-spacing:1px;color:#b7bcea}.ai-xam-mock-score strong{display:block;font-size:38px;font-weight:800;margin:7px 0}.ai-xam-mock-score p{color:#c2cdea}
+.ai-xam-mock-topics{display:grid;gap:16px}.ai-xam-mock-topic-head{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:8px}.ai-xam-mock-track{height:10px;border-radius:99px;overflow:hidden;background:#384366}.ai-xam-mock-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#866cff,#b89aff)}
+.ai-xam-mock-feedback{display:grid;gap:14px}.ai-xam-mock-feedback article{border:1px solid #3c4969;border-radius:12px;padding:17px;background:#222e4e;display:grid;gap:10px}.ai-xam-mock-feedback h4{display:flex;justify-content:space-between;gap:12px;font-weight:700}.ai-xam-mock-feedback p{font-size:13px;line-height:1.6;white-space:pre-wrap}.ai-xam-mock-feedback summary{cursor:pointer;color:#d0beff;font-size:13px}
+@media(max-width:700px){.ai-xam-mock{padding:18px}.ai-xam-mock-fields{grid-template-columns:1fr}.ai-xam-mock-panel{padding:16px}}

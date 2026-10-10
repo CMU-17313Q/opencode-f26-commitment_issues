@@ -1,0 +1,209 @@
+.ai-xam-dna {
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid #273457;
+  border-radius: 20px;
+  background: #0e162c;
+  color: #ecf0ff;
+}
+
+.ai-xam-dna-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ai-xam-dna-eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  color: #ad9aff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+}
+
+.ai-xam-dna-heading h2 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.15;
+}
+
+.ai-xam-dna-heading p,
+.ai-xam-dna-panel-heading p {
+  margin: 0;
+  color: #aebbd7;
+  line-height: 1.6;
+}
+
+.ai-xam-dna-back {
+  padding: 10px 16px;
+  border: 1px solid #455275;
+  border-radius: 10px;
+  background: #1d2946;
+  color: #f0f2ff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.ai-xam-dna-back:hover {
+  background: #2b385a;
+}
+
+.ai-xam-dna-notice {
+  display: grid;
+  gap: 5px;
+  padding: 14px 18px;
+  border: 1px solid #7863cb;
+  border-radius: 12px;
+  background: #242046;
+}
+
+.ai-xam-dna-notice strong {
+  color: #e4d8ff;
+}
+
+.ai-xam-dna-notice span {
+  color: #cbbef2;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-xam-dna-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ai-xam-dna-stat,
+.ai-xam-dna-panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #2e3a59;
+  border-radius: 16px;
+  background: #18223c;
+}
+
+.ai-xam-dna-stat {
+  display: grid;
+  gap: 12px;
+}
+
+.ai-xam-dna-stat span {
+  color: #afbddb;
+  font-size: 13px;
+}
+
+.ai-xam-dna-stat strong {
+  color: #f6f3ff;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.ai-xam-dna-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ai-xam-dna-panel-heading {
+  margin-bottom: 22px;
+}
+
+.ai-xam-dna-panel-heading h3 {
+  margin: 0 0 6px;
+  color: #ffffff;
+  font-size: 19px;
+}
+
+.ai-xam-dna-panel-heading p {
+  font-size: 13px;
+}
+
+.ai-xam-dna-topics {
+  display: grid;
+  gap: 23px;
+}
+
+.ai-xam-dna-topic-heading,
+.ai-xam-dna-format-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.ai-xam-dna-topic-heading span,
+.ai-xam-dna-format-row span {
+  color: #b1bfdd;
+}
+
+.ai-xam-dna-track {
+  width: 100%;
+  height: 9px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #303a56;
+}
+
+.ai-xam-dna-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8170f8, #c49dff);
+}
+
+.ai-xam-dna-format {
+  padding: 15px;
+  margin-bottom: 12px;
+  border: 1px solid #344263;
+  border-radius: 12px;
+  background: #202c48;
+}
+
+.ai-xam-dna-evidence {
+  display: grid;
+  gap: 7px;
+  padding-left: 17px;
+  margin: 11px 0 0;
+  color: #afbddb;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ai-xam-dna-evidence strong {
+  color: #d3c5ff;
+}
+
+.ai-xam-dna-list {
+  display: grid;
+  gap: 13px;
+  padding-left: 20px;
+  margin: 0;
+  color: #d4ddf2;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-xam-dna-list li::marker {
+  color: #ae91ff;
+}
+
+@media (max-width: 720px) {
+  .ai-xam-dna {
+    padding: 18px;
+  }
+
+  .ai-xam-dna-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-xam-dna-stats {
+    grid-template-columns: 1fr;
+  }
+}

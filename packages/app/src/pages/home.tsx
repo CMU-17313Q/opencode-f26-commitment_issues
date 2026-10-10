@@ -8,6 +8,7 @@ import { createHomeSessionSearchController } from "./home/home-session-search-co
 import { createHomeSessionsController } from "./home/home-sessions-controller"
 import { HomeSessions } from "./home/home-sessions"
 import { FocusSessionCard } from "./home/focus-session/focus-session-card"
+import { AIxamHomeEntry } from "./ai-xam/home-entry"
 
 export function NewHome() {
   const home = createHomeController()
@@ -31,6 +32,7 @@ export function NewHome() {
         onWheel={scroll.viewport.containOuterWheel}
       >
         <FocusSessionCard home={home} />
+        <AIxamHomeEntry serverURL={home.server.focused()?.http.url} />
         <div
           class={`
             mx-auto grid min-h-full w-full max-w-[1080px] grid-rows-[auto_minmax(0,1fr)_auto] gap-4 px-3
