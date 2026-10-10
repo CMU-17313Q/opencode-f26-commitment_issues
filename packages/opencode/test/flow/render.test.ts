@@ -2,6 +2,8 @@ import { expect, test } from "bun:test"
 import type { Graph } from "@/command/learn-flow/graph"
 import { renderFlowchart } from "@/command/learn-flow/render"
 
+const LONG_CONDITION = "accountBalance - pendingWithdrawals > minimumRequiredBalanceThreshold"
+
 test("renders a linear start -> step -> return graph as boxes joined by arrows", () => {
   const graph: Graph = {
     nodes: [
@@ -427,6 +429,53 @@ test("renders a nested loop, each loop looping back to its own decision", () => 
       "+------------+",
       "| return sum |",
       "+------------+",
+    ].join("\n"),
+  )
+})
+
+const MAX_BOX_WIDTH = 44
+
+test("truncates a box label longer than 40 characters so boxes stay aligned", () => {
+  expect(LONG_CONDITION.length).toBeGreaterThan(40)
+
+  const graph: Graph = {
+    nodes: [
+      { id: "1", kind: "start", label: "start" },
+      { id: "2", kind: "decision", label: LONG_CONDITION },
+      { id: "3", kind: "return", label: "return true" },
+      { id: "4", kind: "return", label: "return false" },
+    ],
+    edges: [
+      { from: "1", to: "2" },
+      { from: "2", to: "3", label: "yes" },
+      { from: "2", to: "4", label: "no" },
+    ],
+  }
+
+  const output = renderFlowchart(graph)
+  for (const line of output.split("\n")) expect(line.length).toBeLessThanOrEqual(MAX_BOX_WIDTH)
+
+  expect(output).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+------------------------------------------+",
+      "| accountBalance - pendingWithdrawals > m… |",
+      "+------------------------------------------+",
+      "  | yes",
+      "  v",
+      "+-------------+",
+      "| return true |",
+      "+-------------+",
+      "",
+      "  | no",
+      "  v",
+      "+--------------+",
+      "| return false |",
+      "+--------------+",
     ].join("\n"),
   )
 })

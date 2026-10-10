@@ -1,5 +1,7 @@
 import type { Edge, Graph, Node } from "./graph"
 
+const MAX_LABEL_LENGTH = 40
+
 // Renders a graph as stacked boxes joined by arrows, top to bottom.
 // Linear chains render as box -> box -> box. A "decision" node renders its
 // branches stacked in full, one after another (never side by side). An edge
@@ -71,8 +73,15 @@ function renderBox(node: Node): string {
   // Flag unsupported constructs in the box itself, rather than trusting the
   // extractor's label text alone to make that clear.
   const text = node.kind === "unsupported" ? `unsupported: ${node.label}` : node.label
-  const label = ` ${text} `
+  const label = ` ${truncate(text)} `
   const border = "+" + "-".repeat(label.length) + "+"
   return [border, `|${label}|`, border].join("\n")
+}
+
+// Keeps every box at or below a fixed width so a long label can't misalign
+// the arrows between boxes.
+function truncate(text: string): string {
+  if (text.length <= MAX_LABEL_LENGTH) return text
+  return text.slice(0, MAX_LABEL_LENGTH - 1) + "…"
 }
 
