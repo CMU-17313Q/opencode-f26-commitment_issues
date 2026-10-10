@@ -2,9 +2,11 @@ import type { Edge, Graph, Node } from "./graph"
 
 // Renders a graph as stacked boxes joined by arrows, top to bottom.
 // Linear chains render as box -> box -> box. A "decision" node renders its
-// "yes" branch in full, then its "no" branch in full underneath it (never
-// side by side). A branch that rejoins a node already drawn points back to
-// it instead of redrawing the box, so a shared node only appears once.
+// branches stacked in full, one after another (never side by side). An edge
+// to a node still on the current path (a loop back edge) prints a "loops
+// back" line instead of recursing, so loops never render infinitely. An edge
+// to a node already finished elsewhere (branches reconverging) prints a
+// "continues" line instead of redrawing the box.
 // Empty or invalid graphs never throw; they return a clear error string.
 export function renderFlowchart(graph: Graph): string {
   const byID = new Map(graph.nodes.map((node) => [node.id, node]))
@@ -25,12 +27,19 @@ export function renderFlowchart(graph: Graph): string {
   }
 
   const drawn = new Set<string>()
+  // Ancestors of the node currently being walked, in order. A back edge to
+  // one of these is a loop; anything else already in `drawn` is a rejoin.
+  const path: string[] = []
   const lines: string[] = []
 
   function branch(edge: Edge) {
     const next = byID.get(edge.to)
     if (!next) return
     lines.push(edge.label ? `  | ${edge.label}` : "  |", "  v")
+    if (path.includes(next.id)) {
+      lines.push(`(loops back to "${next.label}" above)`)
+      return
+    }
     if (drawn.has(next.id)) {
       lines.push(`(continues at "${next.label}" above)`)
       return
@@ -39,23 +48,19 @@ export function renderFlowchart(graph: Graph): string {
   }
 
   function walk(node: Node) {
+    path.push(node.id)
     drawn.add(node.id)
     lines.push(renderBox(node))
 
     const edges = outgoing.get(node.id) ?? []
-    if (node.kind === "decision") {
-      // Any number of labeled branches (yes/no for an if, or case labels for a
-      // switch), each stacked in full before the next one starts.
-      edges.forEach((edge, i) => {
-        if (i > 0) lines.push("")
-        branch(edge)
-      })
-      return
-    }
+    // Decisions stack every labeled branch; other nodes have at most one edge.
+    const branches = node.kind === "decision" ? edges : edges.slice(0, 1)
+    branches.forEach((edge, i) => {
+      if (i > 0) lines.push("")
+      branch(edge)
+    })
 
-    // Linear node: at most one outgoing edge.
-    const [edge] = edges
-    if (edge) branch(edge)
+    path.pop()
   }
 
   walk(start)

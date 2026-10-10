@@ -247,3 +247,186 @@ test("renders a three-way switch-style decision, each branch stacked in full", (
     ].join("\n"),
   )
 })
+
+test("renders a while loop: the body draws once, then loops back instead of recursing", () => {
+  // while (i < n) { sum += i; i++ } return sum
+  const graph: Graph = {
+    nodes: [
+      { id: "1", kind: "start", label: "start" },
+      { id: "2", kind: "decision", label: "i < n" },
+      { id: "3", kind: "step", label: "sum += i" },
+      { id: "4", kind: "step", label: "i++" },
+      { id: "5", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "1", to: "2" },
+      { from: "2", to: "3", label: "yes" },
+      { from: "3", to: "4" },
+      { from: "4", to: "2" },
+      { from: "2", to: "5", label: "no" },
+    ],
+  }
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "  | yes",
+      "  v",
+      "+----------+",
+      "| sum += i |",
+      "+----------+",
+      "  |",
+      "  v",
+      "+-----+",
+      "| i++ |",
+      "+-----+",
+      "  |",
+      "  v",
+      '(loops back to "i < n" above)',
+      "",
+      "  | no",
+      "  v",
+      "+------------+",
+      "| return sum |",
+      "+------------+",
+    ].join("\n"),
+  )
+})
+
+test("renders an early return inside a loop body, then the loop back edge for the rest of the body", () => {
+  // while (i < n) { if (arr[i] == x) { return i } i++ } return -1
+  const graph: Graph = {
+    nodes: [
+      { id: "1", kind: "start", label: "start" },
+      { id: "2", kind: "decision", label: "i < n" },
+      { id: "3", kind: "decision", label: "arr[i] == x" },
+      { id: "4", kind: "return", label: "return i" },
+      { id: "5", kind: "step", label: "i++" },
+      { id: "6", kind: "return", label: "return -1" },
+    ],
+    edges: [
+      { from: "1", to: "2" },
+      { from: "2", to: "3", label: "yes" },
+      { from: "3", to: "4", label: "yes" },
+      { from: "3", to: "5", label: "no" },
+      { from: "5", to: "2" },
+      { from: "2", to: "6", label: "no" },
+    ],
+  }
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "  | yes",
+      "  v",
+      "+-------------+",
+      "| arr[i] == x |",
+      "+-------------+",
+      "  | yes",
+      "  v",
+      "+----------+",
+      "| return i |",
+      "+----------+",
+      "",
+      "  | no",
+      "  v",
+      "+-----+",
+      "| i++ |",
+      "+-----+",
+      "  |",
+      "  v",
+      '(loops back to "i < n" above)',
+      "",
+      "  | no",
+      "  v",
+      "+-----------+",
+      "| return -1 |",
+      "+-----------+",
+    ].join("\n"),
+  )
+})
+
+test("renders a nested loop, each loop looping back to its own decision", () => {
+  // while (i < n) { while (j < m) { sum += 1; j++ } i++ } return sum
+  const graph: Graph = {
+    nodes: [
+      { id: "1", kind: "start", label: "start" },
+      { id: "2", kind: "decision", label: "i < n" },
+      { id: "3", kind: "decision", label: "j < m" },
+      { id: "4", kind: "step", label: "sum += 1" },
+      { id: "5", kind: "step", label: "j++" },
+      { id: "6", kind: "step", label: "i++" },
+      { id: "7", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "1", to: "2" },
+      { from: "2", to: "3", label: "yes" },
+      { from: "3", to: "4", label: "yes" },
+      { from: "4", to: "5" },
+      { from: "5", to: "3" },
+      { from: "3", to: "6", label: "no" },
+      { from: "6", to: "2" },
+      { from: "2", to: "7", label: "no" },
+    ],
+  }
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "  | yes",
+      "  v",
+      "+-------+",
+      "| j < m |",
+      "+-------+",
+      "  | yes",
+      "  v",
+      "+----------+",
+      "| sum += 1 |",
+      "+----------+",
+      "  |",
+      "  v",
+      "+-----+",
+      "| j++ |",
+      "+-----+",
+      "  |",
+      "  v",
+      '(loops back to "j < m" above)',
+      "",
+      "  | no",
+      "  v",
+      "+-----+",
+      "| i++ |",
+      "+-----+",
+      "  |",
+      "  v",
+      '(loops back to "i < n" above)',
+      "",
+      "  | no",
+      "  v",
+      "+------------+",
+      "| return sum |",
+      "+------------+",
+    ].join("\n"),
+  )
+})
