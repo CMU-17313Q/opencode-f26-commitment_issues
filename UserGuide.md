@@ -499,7 +499,7 @@ They also run in CI (GitHub Actions) on every PR. The tests use a **fake clock**
 
 ## Feature: `/learn-flow` command
 
-**Owner:** Amen · **Issues:** #36 (extractor), #37 (renderer), #38 (tool), #39 (command) · **PRs:** #? (renderer), #? (extractor), #43 (tool), #? (command)
+**Owner:** Amen · **Issues:** #36 (extractor), #37 (renderer), #38 (tool), #39 (command) · **PRs:** #41 (renderer), #42 (extractor), #43 (tool), #44 (command)
 
 > As a visual learner, I want opencode to generate an ASCII art flowchart or diagram of the current function's execution path, so that I can better understand complex logical branching.
 
