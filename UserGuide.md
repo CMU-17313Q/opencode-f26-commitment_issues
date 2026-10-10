@@ -88,64 +88,153 @@ They also run in CI (GitHub Actions) on every PR.
 
 ## Feature: `/learn-quiz` command
 
-**Owner:** Dika · **Issue:** #3 · **PR:** #13
+**Owner:** Dika · **Issues:** #3, #26, #28, #30 · **PRs:** #13, #27, #29, #31
 
 > As a student preparing for labs or homework interviews, I want opencode to automatically generate short questions based on the code I just wrote that make me justify my decisions and explore "what would happen if..." hypotheticals, so that I can verify my understanding.
 
-This issue is the `/learn-quiz` command. It uses the Reflection Question prompt template (#7).
+`/learn-quiz` quizzes you on your own code. It was built in four steps, all for this one user story:
+
+| Issue | PR | What it added |
+|-------|----|---------------|
+| #3 | #13 | The `/learn-quiz` command, using the Reflection Question prompt (#7) |
+| #26 | #27 | An interactive quiz view in the terminal app: one question at a time, with back, skip and quit. The long prompt is hidden from the chat |
+| #28 | #29 | Five question types, graded multiple choice, and arguments to choose the code, the number of questions, the difficulty and the format |
+| #30 | #31 | Hints, feedback on every answer, and a summary with next steps at the end |
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-quiz`. <What context it reads, e.g. the current project or recent changes.>
-3. <What the student sees and how to answer.>
+The quiz view is part of the **terminal app (TUI)**. From the repo root, run:
 
-### How to user-test it (about <N> minutes)
+```bash
+bun dev .
+```
 
-<Setup, e.g. a project with some recent code.>
+The `.` opens the repo root as the project. Without it, opencode opens `packages/opencode`, and file paths won't match. Pick a model that supports tool calling with `/models`. If it doesn't support tool calling, the questions are printed as a plain list instead of the quiz view. In the web app, `/learn-quiz` still works, but questions show in the web app's normal question box instead of the quiz view.
+
+1. In the chat box, type `/learn-quiz` and press enter. You can add options:
+
+   ```
+   /learn-quiz [file | --diff] [--count <3-10>] [--level <level>] [--format <format>] [-h | --help]
+   ```
+
+   | Option | What it does | Default |
+   |--------|--------------|---------|
+   | `file` | Quiz on one file, e.g. `src/app.ts` | Your recent changes (uncommitted changes, or your last commits) |
+   | `--diff` | Quiz only on your uncommitted changes | |
+   | `--count <n>` | Number of questions, 3 to 10 | 5 |
+   | `--level` | `beginner`, `intermediate` or `advanced`: how deep the questions go | `intermediate` |
+   | `--format` | `mcq` multiple choice only, `frq` typed answers only, or `mixed` | `mixed` |
+   | `-h`, `--help` | Show this list without starting a quiz | |
+
+   If an option is wrong (for example `--count 50` or a file that doesn't exist), a red message explains what's wrong and shows the usage line. Nothing is sent to the AI.
+
+2. The chat shows only what you typed. The AI reads your code and opens the quiz in place of the chat box. You see one question at a time, with "Question 2 of 5" at the top. Questions mix five types: why you made a choice, what would happen if something changed, trade-offs against another approach, what the code returns for an input, and multiple-choice concept checks.
+
+3. Type your answer and press `enter` for the next question (`enter` on the last one submits). For multiple choice, pick with `↑` `↓` and `enter`, or `1`–`9`; `■` marks your pick. `shift+tab` / `tab` go back and forward and keep your answers, `ctrl+s` skips, `ctrl+o` shows or hides a hint (it points you where to look, but doesn't give the answer), and `esc` quits back to the chat.
+
+4. After you submit, the AI replies with:
+   - **Feedback** on every question. Multiple choice is marked Correct, Incorrect or Skipped, with the right answer. Typed answers get feedback on your reasoning, without the full answer and without rewriting your code.
+   - **A summary**: Strong areas, Areas to review (including every question you skipped), and at least one concrete Next step, such as a concept to read about, a function to revisit, or running `/learn-recap` on a file.
+
+### How to user-test it (about 15 minutes)
+
+Run `bun dev .` from the repo root and pick a model that supports tool calling (see above). The steps use `packages/app/src/pages/home/focus-session/controller/presets.ts`, a short file in this repo.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-quiz` | The command is recognized |
-| 2 | <Run it in a project with code> | A short set of reflection questions about that code |
-| 3 | <Read the questions> | At least one asks why a design choice was made |
-| 4 | <Read the questions> | At least one asks "what would happen if..." or about an alternative |
-| 5 | <Read the questions> | No solutions are revealed and no code is rewritten |
-| 6 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Run `/learn-quiz --help` | A help box listing every option, its default, and the quiz keys. No quiz starts |
+| 2 | Close it, then run `/learn-quiz --count 50` | A red message: `--count must be a whole number from 3 to 10`, ending with the usage line. Nothing is sent to the AI |
+| 3 | Run `/learn-quiz packages/app/src/pages/home/focus-session/controller/presets.ts` | The chat shows only your command, not the long prompt. The quiz opens at "Question 1 of 5" |
+| 4 | Go through the questions with `tab` | 5 questions, each about something specific in `presets.ts`. At least three types, including one "why" question and one "what would happen if..." question. One or two are multiple choice with `□` options that show full answer text |
+| 5 | On any question, press `ctrl+o`, then `ctrl+o` again | A hint appears below the question, then hides. The hint doesn't give the answer |
+| 6 | Type an answer, press `enter`, then `shift+tab` | You're back on the previous question with your answer still there |
+| 7 | Answer the rest, skipping one with `ctrl+s`, and press `enter` on the last question | The quiz closes. The AI replies with Feedback for every question: multiple choice marked Correct or Incorrect, typed answers get feedback without the full answer, and the skipped one is marked Skipped |
+| 8 | Read the end of the reply | A Summary with Strong areas, Areas to review (your skipped question is listed), and at least one Next step |
+| 9 | Run the same file with `--format mcq --count 3 --level beginner` | Exactly 3 questions, all multiple choice, simpler than before |
+| 10 | Run the same file with `--format frq --level advanced` | All typed questions, going deeper (for example, failure cases or how the design would change) |
+| 11 | Start any quiz and press `esc` | The quiz closes and you're back at the chat box with no error |
+| 12 | Change any file a little, then run `/learn-quiz --diff` | The questions are about the change you just made |
+| 13 | Run `/learn-recap` or `/init` | They work as before, and their prompt still shows in the chat as it did before this feature |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they are** (6 files, 102 tests for this feature):
+
+| File | Tests | What it checks |
+|------|-------|----------------|
+| `packages/opencode/test/command/learn-quiz.test.ts` | 37 | `/learn-quiz` is registered, uses the `learn-quiz.txt` prompt, and the other commands are unchanged |
+| `packages/opencode/test/command/learn-quiz-args.test.ts` | 17 | Reading the options: every option, defaults, `--help`, and every kind of invalid input |
+| `packages/opencode/test/command/reflection-questions-template.test.ts` | 22 | What the prompt tells the AI: question types, levels, formats, hints, feedback and summary. Shared with the Reflection Question template (#7) |
+| `packages/opencode/test/session/prompt.test.ts` | 8 | Running the real command: the prompt is hidden from the chat, the AI gets the checked settings, and bad options are rejected before anything is sent. Only the tests named `learn-quiz …` and "other commands still show their template" |
+| `packages/opencode/test/tool/question.test.ts` | 1 | A hint reaches the question the student sees but isn't sent back to the AI. Only "passes a quiz hint on at the end of the question text…" |
+| `packages/tui/test/cli/tui/quiz.test.tsx` | 17 | The quiz view, drawn in a test terminal with real key presses: progress, answer, back, skip, quit, multiple choice, hints and help |
 
 **How to run them:**
 
 ```bash
-<command that runs only your tests>
+cd packages/opencode
+bun test test/command/learn-quiz.test.ts test/command/learn-quiz-args.test.ts test/command/reflection-questions-template.test.ts test/tool/question.test.ts
+bun test test/session/prompt.test.ts -t "learn-quiz|other commands still"
+
+cd ../tui
+bun test test/cli/tui/quiz.test.tsx
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
-**What they cover:**
+**What they check:**
 
-| Acceptance criterion (#3) | Test file / test name |
-|---------------------------|-----------------------|
-| `/learn-quiz` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| The command uses relevant code/project context when generating questions | `<file>` / `<test name>` |
-| The response generates a short set of reflection questions | `<file>` / `<test name>` |
-| Questions include reasoning about why an implementation/design decision was made | `<file>` / `<test name>` |
-| Questions include at least one meaningful "what would happen if..." or alternative-scenario question when appropriate | `<file>` / `<test name>` |
-| Questions do not simply reveal solutions or rewrite the code | `<file>` / `<test name>` |
-| Relevant automated tests pass | CI run on PR #13 |
-| Existing opencode commands continue to work | `<file>` / `<test name>` |
+| Acceptance criterion | Test file / test name |
+|----------------------|-----------------------|
+| **#3: `/learn-quiz` command** | |
+| `/learn-quiz` is recognized as a valid opencode command | `learn-quiz.test.ts` / "is recognized as a valid command", "learn-quiz appears in the command list" |
+| The command uses relevant code/project context when generating questions | `reflection-questions-template.test.ts` / "reads the code for each scope", "falls back to the student's recent work when there is no input" |
+| The response generates a short set of reflection questions | `reflection-questions-template.test.ts` / "asks for the number of questions in the settings, grounded in the code"; `learn-quiz-args.test.ts` / "defaults to recent changes, a short quiz, intermediate depth, and mixed questions" |
+| Questions ask why an implementation/design decision was made | `reflection-questions-template.test.ts` / "mixes at least three types, always with design justification and alternative scenario"; `learn-quiz.test.ts` / "learn-quiz template asks for design-decision justification ('why')" |
+| At least one "what would happen if..." or alternative-scenario question | Same as above; `learn-quiz.test.ts` / "learn-quiz template asks for at least one alternative-scenario question" |
+| Questions do not simply reveal solutions or rewrite the code | `reflection-questions-template.test.ts` / "does not reveal answers or rewrite the code"; `learn-quiz.test.ts` / "learn-quiz template tells the model not to reveal solutions or rewrite code" |
+| Relevant automated tests pass | CI runs on PRs #13, #27, #29, #31 |
+| Existing opencode commands continue to work | `learn-quiz.test.ts` / "leaves the existing built-in commands unchanged", "init and review descriptions are unchanged" |
+| **#26: Interactive quiz view** | |
+| `/learn-quiz` opens a quiz view instead of printing questions as text | `reflection-questions-template.test.ts` / "asks the questions through the interactive quiz instead of printing them"; `quiz.test.tsx` / "quiz shows one question at a time with progress" |
+| Questions are shown one at a time with visible progress | `quiz.test.tsx` / "quiz shows one question at a time with progress" |
+| The student can answer, go back, skip, or quit | `quiz.test.tsx` / "quiz submits every answer after the last question", "quiz keeps answers when going back and forth", "skipping a question leaves it unanswered", "quitting leaves the quiz without submitting" |
+| Answers are kept when going back and forth | `quiz.test.tsx` / "quiz keeps answers when going back and forth", "multiple choice and typed answers are kept when going back" |
+| Quitting early returns to the normal session without errors | `quiz.test.tsx` / "quitting leaves the quiz without submitting"; `reflection-questions-template.test.ts` / "handles skipped questions and a dismissed quiz"; user-test step 11 |
+| The prompt template is not shown to the student | `prompt.test.ts` / "learn-quiz shows the typed command and keeps its template visible only to the model" |
+| Existing commands continue to work | `prompt.test.ts` / "other commands still show their template" |
+| **#28: Question types and arguments** | |
+| At least three question types, including design justification and alternative scenario | `reflection-questions-template.test.ts` / "offers all five question types", "mixes at least three types, always with design justification and alternative scenario" |
+| Questions reference the student's actual code | `reflection-questions-template.test.ts` / "asks for the number of questions in the settings, grounded in the code" |
+| Multiple-choice answers are graded and the result is shown | `reflection-questions-template.test.ts` / "grades multiple choice questions and shows the result"; `quiz.test.tsx` / "multiple choice questions show their options and take the highlighted one on enter" |
+| A file path or `--diff` scopes the quiz; recent changes by default | `learn-quiz-args.test.ts` / "a bare argument scopes the quiz to that file", "--diff scopes the quiz to uncommitted changes", "defaults to recent changes, …"; `reflection-questions-template.test.ts` / "reads the code for each scope" |
+| `--count` sets the number of questions | `learn-quiz-args.test.ts` / "--count sets the number of questions"; `reflection-questions-template.test.ts` / "treats the question count as the exact total, concept checks included" |
+| `--level` changes the depth of the questions | `learn-quiz-args.test.ts` / "--level sets the depth, ignoring case"; `reflection-questions-template.test.ts` / "matches question depth to each level" |
+| Invalid arguments give a clear error message | `learn-quiz-args.test.ts` / "rejects unknown options", "rejects a count that is not a whole number in range", "rejects an unknown level", "rejects an unknown format", "rejects flags with a missing value", "rejects a file together with --diff", "rejects more than one file"; `prompt.test.ts` / `learn-quiz rejects "…" with a clear error and sends nothing` (5 cases) |
+| *(Extra)* `--format` and `--help` | `learn-quiz-args.test.ts` / "--format picks multiple choice only, …", "-h and --help anywhere answer with just the usage line"; `reflection-questions-template.test.ts` / "matches the answer format to each format setting"; `quiz.test.tsx` / "help opens for -h or --help on /learn-quiz, wherever the flag is", "help explains every option and the quiz keys" |
+| *(Extra)* The AI gets the checked settings, not the raw options | `prompt.test.ts` / "learn-quiz hands the model validated settings instead of the raw flags" |
+| **#30: Feedback, hints and summary** | |
+| Each answer gets feedback on the reasoning, without the full solution or rewritten code | `reflection-questions-template.test.ts` / "gives feedback on every answer's reasoning without revealing the solution" |
+| Hints are available per question and don't give away the answer | `reflection-questions-template.test.ts` / "adds a hidden hint to every question", "keeps hints from giving away the answer"; `question.test.ts` / "passes a quiz hint on at the end of the question text, …"; `quiz.test.tsx` / "hints stay hidden until ctrl+o, and ctrl+o hides them again", "each question keeps its own hint state, including multiple choice", "questions without a hint show no hint key, …" |
+| The quiz ends with a summary of strengths and areas to review | `reflection-questions-template.test.ts` / "ends with a summary of strengths, areas to review, and next steps" |
+| The summary includes at least one concrete next step | Same as above |
+| Skipped questions appear in the summary | `reflection-questions-template.test.ts` / "reflects skipped questions in the summary" |
+| Existing commands continue to work | `prompt.test.ts` / "other commands still show their template"; `learn-quiz.test.ts` / "init and review descriptions are unchanged" |
 
 ### Why these tests are enough
 
-- **Every acceptance criterion of #3 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the generated questions, covered by user-test steps 2-5.>
+- **Every acceptance criterion of #3, #26, #28 and #30 has at least one test** (table above).
+- **The tests run the real code, not copies:**
+  - The option tests call the real option reader in `packages/opencode/src/command/learn-quiz.ts`.
+  - The command tests load the real list of commands and the real `learn-quiz.txt` prompt.
+  - `prompt.test.ts` runs the real `/learn-quiz` command against a fake AI server and checks exactly what the AI receives and what the chat shows.
+  - `quiz.test.tsx` draws the real quiz view in a test terminal and presses real keys.
+- **Edge cases and failures are covered:** every kind of bad option (with nothing sent to the AI), `--help` anywhere, going back from the first question, skipping and quitting, options labelled only "A", "B", "C", questions without a hint, and the question count including multiple choice.
+- **What the tests can't check is covered by the user-test steps:**
+  - The tests check what the prompt *tells* the AI to do, but not the AI's actual questions, hints, feedback or summary, which are different every time. Steps 4–10 and 12 cover those.
+  - The switch from the chat box to the quiz view, and back after quitting, happens in the full app. Steps 3 and 11 cover that.
 
-I followed these steps on main on <date> and all <N> passed.
+I followed these steps on main on 9 October 2026 and all 13 passed.
 
 ---
 
