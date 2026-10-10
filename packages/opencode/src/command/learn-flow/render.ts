@@ -5,17 +5,24 @@ import type { Edge, Graph, Node } from "./graph"
 // "yes" branch in full, then its "no" branch in full underneath it (never
 // side by side). A branch that rejoins a node already drawn points back to
 // it instead of redrawing the box, so a shared node only appears once.
+// Empty or invalid graphs never throw; they return a clear error string.
 export function renderFlowchart(graph: Graph): string {
   const byID = new Map(graph.nodes.map((node) => [node.id, node]))
+
+  const start = graph.nodes.find((node) => node.kind === "start")
+  if (!start) return "(empty graph: no start node to render)"
+
+  for (const edge of graph.edges) {
+    const unknown = !byID.has(edge.from) ? edge.from : !byID.has(edge.to) ? edge.to : undefined
+    if (unknown !== undefined) return `(invalid graph: edge references unknown node "${unknown}")`
+  }
+
   const outgoing = new Map<string, Edge[]>()
   for (const edge of graph.edges) {
     const list = outgoing.get(edge.from)
     if (list) list.push(edge)
     else outgoing.set(edge.from, [edge])
   }
-
-  const start = graph.nodes.find((node) => node.kind === "start")
-  if (!start) return ""
 
   const drawn = new Set<string>()
   const lines: string[] = []
@@ -57,7 +64,10 @@ export function renderFlowchart(graph: Graph): string {
 }
 
 function renderBox(node: Node): string {
-  const label = ` ${node.label} `
+  // Flag unsupported constructs in the box itself, rather than trusting the
+  // extractor's label text alone to make that clear.
+  const text = node.kind === "unsupported" ? `unsupported: ${node.label}` : node.label
+  const label = ` ${text} `
   const border = "+" + "-".repeat(label.length) + "+"
   return [border, `|${label}|`, border].join("\n")
 }
