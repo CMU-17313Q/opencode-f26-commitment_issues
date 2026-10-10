@@ -490,3 +490,57 @@ They also run in CI (GitHub Actions) on every PR. The tests use a **fake clock**
 - A few things can only be checked in a real browser: full screen, leaving the window, and the AI's real answer. The card and panels only show what the controller says. The user-test steps above cover all of these.
 
 **TODO (replace before submitting):** I followed these steps on main on `<date>` and all 11 passed.
+
+---
+
+## AI-xam: Mock Exams & Adaptive Assessment (Issue #35)
+
+### Before starting
+
+AI-xam uses a configured OpenCode server and any model supported by its analysis transport. For the current course demonstration, the selected model is `anthropic/claude-haiku-5-5`. Add the provider API credential using `bun run --cwd packages/opencode dev providers login --provider anthropic` from the repo root (never commit credentials). Running the tests and CI requires **no API key**.
+
+Start the server from repository root:
+
+```sh
+bun run --cwd packages/opencode dev serve --port 4096 --cors http://localhost:4444
+```
+
+Start the web UI from `packages/app`:
+
+```sh
+bun run dev --host localhost --port 4444 --strictPort
+```
+
+For standalone testing, visit `http://localhost:4444/src/pages/ai-xam/preview.html`. When the home-screen patch is installed, open the OpenCode home page and choose **Open AI-xam** (Focus Mode remains available).
+
+### User testing / how it works
+
+1. Upload one or more **Past Exams** and **Course Materials** separately. Allowed formats: PDF, TXT, MD; up to 10 MB per file. Do not upload private/student data without appropriate permission. Files are sent to the configured AI provider for analysis when **Generate Exam DNA** is clicked.
+2. Review and verify each prepared document, then click **Generate Exam DNA**.
+3. Examine real AI-generated Exam DNA: question-format frequencies (sometimes counted by subpart), topics, difficulty, supporting exam evidence, and explicit limitations. AI output is validated, but factual conclusions still need user review.
+4. Select **Build my mock exam**. Customize question count (1–20), difficulty, formats, and duration (5–180 minutes); then click **Generate mock exam**.
+5. Answer each question; navigation preserves typed answers. Flag questions for review. The timer counts down, automatically submitting when time expires. Mark schemes remain hidden from the exam-taking UI.
+6. Submit for Claude grading. Review point totals, topic-wise performance, answer-specific feedback, and reference answers/rubrics (revealed only after grading). For any topic under 70%, choose **Targeted retake** to generate new questions and compare overall performance with the original.
+7. If generating or grading fails, review the error and retry; grading failures preserve submitted answers and do not automatically resend a paid request.
+
+### Automated testing
+
+In `packages/app`, run:
+
+```sh
+bun run typecheck
+bun test ./src/pages/ai-xam/
+```
+
+- `domain/document-validation.test.ts`, `documents.test.ts`, `services/document-ingestion.test.ts`, `source-review.test.ts` validate upload limitations, file processing, and categories.
+- `domain/exam-dna-validation.test.ts`, `ai/exam-dna-ai.test.ts`, `ai/analyze-exam-dna.test.ts` test Exam DNA contracts, parsing, transport injection, evidence, and error handling.
+- `domain/mock-exam.test.ts` validates question structure, reject invalid AI payloads, scoring, missing/duplicate grades, topic scores, and weak-topic detection.
+- `ai/mock-exam-ai.test.ts` tests generation/grading through a mock transport without paid API access, including hallucinated topics and simulated provider errors.
+
+These are deterministic automated tests, not proof that every live provider call succeeds. Separately test one `.txt` and one `.pdf` end-to-end with a configured provider. The current upload verifier checks PDF signatures but does not guarantee visual PDF reading; actual PDF attachment support needs to be checked on the desired OpenCode deployment.
+
+### Implementation, privacy, and limitations
+
+All work is isolated under `packages/app/src/pages/ai-xam`, apart from one optional home-screen import and card in `pages/home.tsx`. The selected Anthropic model and local server URL are currently defaulted in `ai-xam-page.tsx`; other deployments should pass the active OpenCode server and choose a configured provider. Credentials are managed by OpenCode, not by AI-xam's browser code or CI. Avoid exposing local dev server (currently without password) outside localhost.
+
+Question grading uses a generated reference answer/rubric and therefore may be imperfect. The question reference answers remain stored client-side and hidden in the normal exam-taking interface (not a secure proctoring/anti-cheat solution). Answers are preserved across question navigation but not across browser reloads. PDFs and long documents may use significant AI tokens and cost. Manual QA and a team review are necessary before claiming full production readiness.

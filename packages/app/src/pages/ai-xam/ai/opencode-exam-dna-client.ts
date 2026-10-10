@@ -1,4 +1,4 @@
-import type { OpencodeClient } from "@opencode-ai/sdk"
+import type { OpencodeClient } from "@opencode-ai/sdk/client"
 import type { ExamDNATransport, PDFSource } from "./analyze-exam-dna"
 
 const ENCODING_CHUNK_SIZE = 8192
@@ -20,11 +20,40 @@ export async function pdfToDataURL(file: File): Promise<string> {
 
 export function createOpenCodeExamDNATransport(
   client: OpencodeClient,
+  selectedModel?: {
+    providerID: string
+    modelID: string
+  },
 ): ExamDNATransport {
   return {
     async request(input: { prompt: string; pdfs: PDFSource[] }) {
       // Keep the analysis separate from the student's coding session.
-      const created = await client.session.create()
+        const availableTools = await client.tool.ids()
+
+        if (
+        availableTools.error ||
+        !Array.isArray(availableTools.data)
+        ) {
+        throw new Error(
+            "Could not verify OpenCode's available tools. Analysis was not started.",
+        )
+        }
+
+        const disabledTools = Object.fromEntries(
+        [
+            ...availableTools.data,
+            "list_mcp_resources",
+            "list_mcp_resource_templates",
+            "read_mcp_resource",
+        ].map((id) => [id, false]),
+        )
+
+        const created = await client.session.create({
+        body: {
+            title: "AI-xam — Exam DNA Analysis",
+        },
+        })
+
 
       const sessionID = created.data?.id
 
@@ -46,6 +75,9 @@ export function createOpenCodeExamDNATransport(
       const response = await client.session.prompt({
         path: { id: sessionID },
         body: {
+          agent: "build",
+          ...(selectedModel ? { model: selectedModel } : {}),
+          tools: disabledTools,
           parts: [
             {
               type: "text",
@@ -54,15 +86,43 @@ export function createOpenCodeExamDNATransport(
             ...pdfParts,
           ],
         },
+        signal: AbortSignal.timeout(90_000),
       })
-
-      if (!response.data) {
+      if (response.error) {
         throw new Error(
-          "OpenCode did not return a successful AI response. " +
-          "Check your configured model and server connection.",
+          `OpenCode request failed: ${JSON.stringify(response.error)}`,
         )
       }
 
+      if (!response.data) {
+        throw new Error("OpenCode returned no response data.")
+      }
+
+      console.log("AI-xam response diagnostics:", {
+        sessionID,
+        provider: response.data.info.providerID,
+        model: response.data.info.modelID,
+        finish: response.data.info.finish,
+        error: response.data.info.error,
+        partTypes: response.data.parts.map((part) => part.type),
+      })
+
+      if (response.data.info.error) {
+        throw new Error(
+          `OpenCode model error: ${response.data.info.error.name}: ` +
+          JSON.stringify(response.data.info.error.data),
+        )
+      }
+
+      console.log("AI-xam generation details:", {
+        tokens: response.data.info.tokens,
+        steps: response.data.parts
+          .filter((part) => part.type === "step-finish")
+          .map((part) => ({
+            reason: part.reason,
+            tokens: part.tokens,
+          })),
+      })
       const text = response.data.parts
         .filter((part) => part.type === "text")
         .map((part) => part.text)
