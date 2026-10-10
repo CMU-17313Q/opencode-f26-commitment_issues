@@ -53,18 +53,61 @@ export function findFunction(tree: Tree, name: string): FindResult {
   return { ok: false, error: `Function "${name}" not found.` }
 }
 
-// Straight-line only: if/loops/switch/try are not handled yet and are treated
-// as plain statements. Statements after a top-level return are unreachable
-// and dropped.
+// Handles plain statements, returns and (nested) ifs. Loops/switch/try are not
+// handled yet and are treated as plain statements. Code after a point where
+// every path has returned is unreachable and dropped.
+//
+// A branch that falls through rejoins at the next node created after the if,
+// which gives that node several incoming edges. renderFlowchart draws the
+// first path in full and prints "(continues at ...)" for the others.
 export function buildGraph(functionNode: Node): Graph {
   const nodes: GraphNode[] = []
   const edges: Edge[] = []
+  // Open ends of the graph so far: the next node created gets an edge from each.
+  let frontier: { from: string; label?: string }[] = []
 
   function add(kind: GraphNode["kind"], label: string) {
     const id = `n${nodes.length + 1}`
-    const previous = nodes[nodes.length - 1]
     nodes.push({ id, kind, label })
-    if (previous) edges.push({ from: previous.id, to: id })
+    for (const open of frontier) edges.push({ from: open.from, to: id, ...(open.label && { label: open.label }) })
+    frontier = [{ from: id }]
+    return id
+  }
+
+  function block(statements: Node[]) {
+    let pending: string[] = []
+    const flush = () => {
+      if (pending.length > 0) add("step", pending.join("; "))
+      pending = []
+    }
+
+    for (const statement of statements) {
+      if (frontier.length === 0) return
+      if (statement.type === "comment") continue
+      if (statement.type === "return_statement") {
+        flush()
+        add("return", label(statement))
+        frontier = []
+        continue
+      }
+      if (statement.type !== "if_statement") {
+        pending.push(label(statement))
+        continue
+      }
+
+      flush()
+      const condition = label(statement.childForFieldName("condition") ?? statement).replace(/^\(|\)$/g, "")
+      const decision = add("decision", condition)
+
+      frontier = [{ from: decision, label: "yes" }]
+      block(statementsOf(statement.childForFieldName("consequence")))
+      const afterThen = frontier
+
+      frontier = [{ from: decision, label: "no" }]
+      block(statementsOf(statement.childForFieldName("alternative")))
+      frontier = [...afterThen, ...frontier]
+    }
+    flush()
   }
 
   add("start", "start")
@@ -72,25 +115,17 @@ export function buildGraph(functionNode: Node): Graph {
   const body = functionNode.childForFieldName("body")
   // Expression-bodied arrow function: `(n) => n * 2` returns its expression.
   if (body && body.type !== "statement_block") add("return", `return ${label(body)}`)
-
-  let pending: string[] = []
-  const flush = () => {
-    if (pending.length > 0) add("step", pending.join("; "))
-    pending = []
-  }
-
-  for (const statement of body?.type === "statement_block" ? body.namedChildren : []) {
-    if (statement.type === "comment") continue
-    if (statement.type === "return_statement") {
-      flush()
-      add("return", label(statement))
-      return { nodes, edges }
-    }
-    pending.push(label(statement))
-  }
-  flush()
+  else block(statementsOf(body))
 
   return { nodes, edges }
+}
+
+// A branch body is a `{ ... }` block, a lone statement, or an else clause
+// wrapping either (so `else if` yields the nested if).
+function statementsOf(node: Node | null): Node[] {
+  if (!node) return []
+  if (node.type === "statement_block" || node.type === "else_clause") return node.namedChildren.flatMap(statementsOf)
+  return [node]
 }
 
 // One-line statement text without the trailing semicolon, so labels are stable

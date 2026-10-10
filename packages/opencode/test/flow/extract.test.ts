@@ -84,3 +84,142 @@ test("a built graph renders through renderFlowchart with the labels in order", a
   expect(positions.every((position) => position >= 0)).toBe(true)
   expect(positions).toEqual([...positions].sort((a, b) => a - b))
 })
+
+test("builds a decision with an early return and no else: the no edge goes to the next statement", async () => {
+  const source = "function f(x: number) { if (x > 0) { return 1 } return 2 }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "decision", label: "x > 0" },
+      { id: "n3", kind: "return", label: "return 1" },
+      { id: "n4", kind: "return", label: "return 2" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3", label: "yes" },
+      { from: "n2", to: "n4", label: "no" },
+    ],
+  })
+})
+
+test("builds an if/else where both branches return, dropping the unreachable code after it", async () => {
+  const source = "function f(x: number) { if (x > 0) { return 1 } else { return 2 } return 3 }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "decision", label: "x > 0" },
+      { id: "n3", kind: "return", label: "return 1" },
+      { id: "n4", kind: "return", label: "return 2" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3", label: "yes" },
+      { from: "n2", to: "n4", label: "no" },
+    ],
+  })
+})
+
+test("builds an if/else whose branches both rejoin at the next statement", async () => {
+  const source = "function f(x: number) { let y = 0; if (x > 0) { y = 1 } else { y = 2 } return y }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let y = 0" },
+      { id: "n3", kind: "decision", label: "x > 0" },
+      { id: "n4", kind: "step", label: "y = 1" },
+      { id: "n5", kind: "step", label: "y = 2" },
+      { id: "n6", kind: "return", label: "return y" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n3", to: "n5", label: "no" },
+      { from: "n4", to: "n6" },
+      { from: "n5", to: "n6" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-----------+",
+      "| let y = 0 |",
+      "+-----------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| x > 0 |",
+      "+-------+",
+      "+-- yes",
+      "|   +-------+",
+      "|   | y = 1 |",
+      "|   +-------+",
+      "|     |",
+      "|     v",
+      "|   +----------+",
+      "|   | return y |",
+      "|   +----------+",
+      "+-- no",
+      "    +-------+",
+      "    | y = 2 |",
+      "    +-------+",
+      "      |",
+      "      v",
+      '    (continues at "return y" above)',
+    ].join("\n"),
+  )
+})
+
+test("builds a nested if recursively", async () => {
+  const source = "function f(a: number, b: number) { if (a > 0) { if (b > 0) { return 1 } } return 2 }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "decision", label: "a > 0" },
+      { id: "n3", kind: "decision", label: "b > 0" },
+      { id: "n4", kind: "return", label: "return 1" },
+      { id: "n5", kind: "return", label: "return 2" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3", label: "yes" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n3", to: "n5", label: "no" },
+      { from: "n2", to: "n5", label: "no" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| a > 0 |",
+      "+-------+",
+      "+-- yes",
+      "|   +-------+",
+      "|   | b > 0 |",
+      "|   +-------+",
+      "|   +-- yes",
+      "|   |   +----------+",
+      "|   |   | return 1 |",
+      "|   |   +----------+",
+      "|   +-- no",
+      "|       +----------+",
+      "|       | return 2 |",
+      "|       +----------+",
+      "+-- no",
+      '    (continues at "return 2" above)',
+    ].join("\n"),
+  )
+})
