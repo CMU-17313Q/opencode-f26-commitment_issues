@@ -370,63 +370,72 @@ I followed these steps on main on <date> and all <N> passed.
 
 ---
 
-## Feature: `/learn-tests` command
+## Feature: `/learn-test` command
 
 **Owner:** Mohamed Waiel Shikfa · **Issue:** #6 · **PR:** #15
 
 > As a student writing tests in a new language or library, I want opencode to explain what each test does in plain language, so that I can understand the testing logic and become more confident writing tests independently in the future.
 
-This issue is the `/learn-tests` command. It uses the Test Explanation prompt template (#2).
+This is the `/learn-test` command. It was built as `/learn-tests` and merged as `/learn-test`, so that is the name you type today. It uses the Test Explanation prompt template (#2) from the section above, which is the only place the prompt text lives. The command itself is registered in `packages/opencode/src/command/index.ts`.
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-tests`. <How to select the tests to explain.>
-3. <What the student sees.>
+1. The command is registered in `packages/opencode/src/command/index.ts` as `learn-test`, with the description "explains what the tests are doing and what behavior they verify". It runs inline, with no subtask, agent or model override, so the answer comes back in the same chat.
+2. In a chat, type `/learn-test` and then what you want explained. This can be a file path, a test name, or a test you paste in. Unlike `/learn-quiz`, `/learn-test` takes no flags: everything after the command name goes into its one `$ARGUMENTS` placeholder. If you type nothing after it, the AI explains the test you were just discussing, or asks which test you mean.
+3. The AI answers in the order set by the Test Explanation template: what the test protects, why it matters, how it proves it, which testing ideas it uses, and what it does not catch. It ends with one question that checks your understanding. It does not rewrite the test or change any files.
 
-### How to user-test it (about <N> minutes)
+### How to user-test it (about 5 minutes)
 
-<Setup, e.g. a project with a test file.>
+Open this repo as a project in opencode and start a new chat. A good test file to try is `packages/app/src/pages/home/focus-session/controller/presets.test.ts`.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-tests` | The command is recognized |
-| 2 | <Run it on a test> | The output identifies the purpose of the test |
-| 3 | <Read the output> | It describes the behavior being verified, not a line-by-line paraphrase |
-| 4 | <Read the output> | It follows the Test Explanation template |
-| 5 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Type `/learn-test` | The command is recognized and listed |
+| 2 | Run `/learn-test packages/app/src/pages/home/focus-session/controller/presets.test.ts` | It explains what the tests are for, not what each line does |
+| 3 | Read the answer | It names the testing ideas at work, such as a boundary case or a regression guard, and explains why the tests are built that way |
+| 4 | Read the answer | It says at least one thing the tests would not catch, and ends with one question for you |
+| 5 | Run `/learn-test` and paste a short pytest test | It says the test uses pytest, and the explanation still makes sense |
+| 6 | Run `/learn-test` with nothing after it in a new chat | It asks which test you mean |
+| 7 | Run `git status`, then run an existing command, for example `/review` | No files were changed, and `/review` still works as before |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they are:** `packages/opencode/test/command/learn-test.test.ts` (1 file, 26 tests). The file was first named `index.test.ts` and was renamed to `learn-test.test.ts` in PR #15. `test/command/learn-tests.test.ts` also checks this command's wiring to the real template.
 
-**How to run them:**
+**How to run them**, from `packages/opencode`:
 
 ```bash
-<command that runs only your tests>
+bun test test/command/learn-test.test.ts
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
-**What they cover:**
+**What they check:**
 
 | Acceptance criterion (#6) | Test file / test name |
 |---------------------------|-----------------------|
-| `/learn-tests` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| The output identifies the purpose of the relevant tests | `<file>` / `<test name>` |
-| The explanation describes the behavior being verified rather than merely paraphrasing code line-by-line | `<file>` / `<test name>` |
-| The final implementation uses the Test Explanation prompt template | `<file>` / `<test name>` |
+| `/learn-test` is recognized as a valid opencode command | `learn-test.test.ts` / "learn-test appears in the command list", "learn-test can be retrieved individually", "learn-test default key is 'learn-test'", "learn-test has the expected name, description, and source", "command list has no duplicate learn-test entries" |
+| The output identifies the purpose of the relevant tests | The command sends the Test Explanation template, which asks for purpose first: `learn-test.test.ts` / "learn-test template is exactly the contents of test-explanation.txt"; `learn-tests.test.ts` / "uses the Test Explanation prompt template" |
+| The explanation describes the behavior being verified rather than merely paraphrasing code line-by-line | Same as above; the template's own wording is checked in `test-explanation-template.test.ts` / "teaches instead of translating line by line" |
+| The final implementation uses the Test Explanation prompt template | `learn-test.test.ts` / "learn-test template is exactly the contents of test-explanation.txt", "learn-test template is non-empty" |
 | Relevant automated tests pass | CI run on PR #15 |
-| Existing opencode functionality remains unaffected | `<file>` / `<test name>` |
+| Existing opencode functionality remains unaffected | `learn-test.test.ts` / "init and review are still retrievable after adding learn-test", "init and review descriptions are unchanged", "init and review templates still resolve to non-empty strings", "every listed command is retrievable by name", "command names in the list are unique", "get() returns undefined for an unknown command" |
+| *(Extra)* The tests to explain reach the model, and the command runs inline | `learn-test.test.ts` / "hints() detects $ARGUMENTS", "learn-test hints match hints() computed from its template", "learn-test runs inline with no subtask, agent, or model override"; `learn-tests.test.ts` / "takes the selected tests as $ARGUMENTS" |
+| *(Extra)* The template and the hint parser stay well formed | `learn-test.test.ts` / "learn-test template has no unresolved ${path} placeholder", "learn-test template is stable across repeated reads", "learn-test template getter never throws and always returns a string", "hints() does not throw on the learn-test template", and the `hints()` unit tests for an empty template, no placeholders, `$ARGUMENTS`, and numbered placeholders |
 
 ### Why these tests are enough
 
 - **Every acceptance criterion of #6 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the explanation, covered by user-test steps 2-4.>
+- **The tests run the real code.** They import the real `test-explanation.txt` and use the same `Command.Service` the app uses at runtime, so they fail if the registration or the template wiring breaks.
+- **Edge cases and failures are covered:**
+  - the template has no leftover `${path}` placeholder, so no path is printed literally
+  - the template getter never throws and always returns a string
+  - `get()` returns undefined for an unknown command name
+  - `hints()` returns an empty array for a template with no placeholders, dedupes and sorts numbered placeholders, and puts them before `$ARGUMENTS`
+  - adding the command did not duplicate names, break `/init` or `/review`, or change their descriptions
+- **What the tests don't cover is checked by hand.** The tests only check what the template *tells* the AI to do, not the AI's actual explanation, because that is different every time. User-test steps 2 to 6 cover that, and step 7 covers "no files changed".
 
-I followed these steps on main on <date> and all <N> passed.
+I followed these steps on main on 4 October 2026 and all 26 passed.
 
 ---
 
