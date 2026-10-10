@@ -1,33 +1,59 @@
-import type { Graph, Node } from "./graph"
+import type { Edge, Graph, Node } from "./graph"
 
 // Renders a graph as stacked boxes joined by arrows, top to bottom.
-// Only supports a single straight-line path (start -> steps -> return);
-// decisions/branching are not handled yet (#37 follow-up).
+// Linear chains render as box -> box -> box. A "decision" node renders its
+// "yes" branch in full, then its "no" branch in full underneath it (never
+// side by side). A branch that rejoins a node already drawn points back to
+// it instead of redrawing the box, so a shared node only appears once.
 export function renderFlowchart(graph: Graph): string {
-  const path = linearPath(graph)
-  return path.map(renderBox).join("\n  |\n  v\n")
-}
-
-// Walks from the "start" node by following each node's single outgoing edge.
-// Driven by edges rather than node array order so the output doesn't depend
-// on how the extractor happened to push nodes into the array.
-function linearPath(graph: Graph): Node[] {
   const byID = new Map(graph.nodes.map((node) => [node.id, node]))
-  const nextID = new Map(graph.edges.map((edge) => [edge.from, edge.to]))
+  const outgoing = new Map<string, Edge[]>()
+  for (const edge of graph.edges) {
+    const list = outgoing.get(edge.from)
+    if (list) list.push(edge)
+    else outgoing.set(edge.from, [edge])
+  }
 
   const start = graph.nodes.find((node) => node.kind === "start")
-  if (!start) return []
+  if (!start) return ""
 
-  const path: Node[] = [start]
-  let current = start
-  while (true) {
-    const id = nextID.get(current.id)
-    const next = id ? byID.get(id) : undefined
-    if (!next) break
-    path.push(next)
-    current = next
+  const drawn = new Set<string>()
+  const lines: string[] = []
+
+  function branch(edge: Edge) {
+    const next = byID.get(edge.to)
+    if (!next) return
+    lines.push(edge.label ? `  | ${edge.label}` : "  |", "  v")
+    if (drawn.has(next.id)) {
+      lines.push(`(continues at "${next.label}" above)`)
+      return
+    }
+    walk(next)
   }
-  return path
+
+  function walk(node: Node) {
+    drawn.add(node.id)
+    lines.push(renderBox(node))
+
+    const edges = outgoing.get(node.id) ?? []
+    if (node.kind === "decision") {
+      const yes = edges.find((edge) => edge.label === "yes")
+      const no = edges.find((edge) => edge.label === "no")
+      if (yes) branch(yes)
+      if (no) {
+        lines.push("")
+        branch(no)
+      }
+      return
+    }
+
+    // Linear node: at most one outgoing edge.
+    const [edge] = edges
+    if (edge) branch(edge)
+  }
+
+  walk(start)
+  return lines.join("\n")
 }
 
 function renderBox(node: Node): string {
@@ -35,3 +61,4 @@ function renderBox(node: Node): string {
   const border = "+" + "-".repeat(label.length) + "+"
   return [border, `|${label}|`, border].join("\n")
 }
+
