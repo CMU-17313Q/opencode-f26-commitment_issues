@@ -38,6 +38,8 @@ export async function parseSource(source: string) {
 
 export type FindResult = { ok: true; node: Node } | { ok: false; error: string }
 
+type Open = { from: string; label?: string }
+
 // Returns the first function named `name`, in source order: a function
 // declaration, an arrow function assigned to a variable, or a class method.
 export function findFunction(tree: Tree, name: string): FindResult {
@@ -53,18 +55,21 @@ export function findFunction(tree: Tree, name: string): FindResult {
   return { ok: false, error: `Function "${name}" not found.` }
 }
 
-// Handles plain statements, returns and (nested) ifs. Loops/switch/try are not
-// handled yet and are treated as plain statements. Code after a point where
-// every path has returned is unreachable and dropped.
+// Handles plain statements, returns, (nested) ifs including else-if chains,
+// and switches. Loops/try are not handled yet and are treated as plain
+// statements. Code after a point where every path has returned is
+// unreachable and dropped.
 //
-// A branch that falls through rejoins at the next node created after the if,
-// which gives that node several incoming edges. renderFlowchart draws the
-// first path in full and prints "(continues at ...)" for the others.
+// A branch that falls through rejoins at the next node created after the
+// if/switch, which gives that node several incoming edges. renderFlowchart
+// draws the first path in full and prints "(continues at ...)" for the others.
 export function buildGraph(functionNode: Node): Graph {
   const nodes: GraphNode[] = []
   const edges: Edge[] = []
   // Open ends of the graph so far: the next node created gets an edge from each.
-  let frontier: { from: string; label?: string }[] = []
+  let frontier: Open[] = []
+  // One entry per enclosing switch: the open ends of its `break` statements.
+  const breaks: Open[][] = []
 
   function add(kind: GraphNode["kind"], label: string) {
     const id = `n${nodes.length + 1}`
@@ -90,6 +95,17 @@ export function buildGraph(functionNode: Node): Graph {
         frontier = []
         continue
       }
+      if (statement.type === "break_statement" && breaks.length > 0) {
+        flush()
+        breaks[breaks.length - 1].push(...frontier)
+        frontier = []
+        continue
+      }
+      if (statement.type === "switch_statement") {
+        flush()
+        switchStatement(statement)
+        continue
+      }
       if (statement.type !== "if_statement") {
         pending.push(label(statement))
         continue
@@ -108,6 +124,37 @@ export function buildGraph(functionNode: Node): Graph {
       frontier = [...afterThen, ...frontier]
     }
     flush()
+  }
+
+  function switchStatement(statement: Node) {
+    const discriminant = label(statement.childForFieldName("value") ?? statement).replace(/^\(|\)$/g, "")
+    const decision = add("decision", discriminant)
+
+    const exits: Open[] = []
+    breaks.push(exits)
+    const cases = (statement.childForFieldName("body")?.namedChildren ?? []).filter(
+      (child) => child.type === "switch_case" || child.type === "switch_default",
+    )
+    let hasDefault = false
+    // Open ends of the previous case when it doesn't break or return: they
+    // continue into the next case's body.
+    let fallthrough: Open[] = []
+    for (const item of cases) {
+      const isDefault = item.type === "switch_default"
+      hasDefault ||= isDefault
+      const edge = isDefault ? "default" : `case ${label(item.childForFieldName("value") ?? item)}`
+      frontier = [...fallthrough, { from: decision, label: edge }]
+      block(
+        item
+          .childrenForFieldName("body")
+          .filter((child) => child !== null)
+          .flatMap(statementsOf),
+      )
+      fallthrough = frontier
+    }
+    breaks.pop()
+
+    frontier = [...exits, ...fallthrough, ...(hasDefault ? [] : [{ from: decision, label: "default" }])]
   }
 
   add("start", "start")
