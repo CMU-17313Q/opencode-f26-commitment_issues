@@ -1,6 +1,7 @@
 import { fileURLToPath } from "url"
 import { Language, Parser, type Node, type Tree } from "web-tree-sitter"
 import { lazy } from "@/util/lazy"
+import type { Edge, Graph, Node as GraphNode } from "./graph"
 
 // Same wasm resolution as src/tool/shell.ts.
 const resolveWasm = (asset: string) => {
@@ -50,4 +51,50 @@ export function findFunction(tree: Tree, name: string): FindResult {
     if (value?.type === "arrow_function") return { ok: true, node: value }
   }
   return { ok: false, error: `Function "${name}" not found.` }
+}
+
+// Straight-line only: if/loops/switch/try are not handled yet and are treated
+// as plain statements. Statements after a top-level return are unreachable
+// and dropped.
+export function buildGraph(functionNode: Node): Graph {
+  const nodes: GraphNode[] = []
+  const edges: Edge[] = []
+
+  function add(kind: GraphNode["kind"], label: string) {
+    const id = `n${nodes.length + 1}`
+    const previous = nodes[nodes.length - 1]
+    nodes.push({ id, kind, label })
+    if (previous) edges.push({ from: previous.id, to: id })
+  }
+
+  add("start", "start")
+
+  const body = functionNode.childForFieldName("body")
+  // Expression-bodied arrow function: `(n) => n * 2` returns its expression.
+  if (body && body.type !== "statement_block") add("return", `return ${label(body)}`)
+
+  let pending: string[] = []
+  const flush = () => {
+    if (pending.length > 0) add("step", pending.join("; "))
+    pending = []
+  }
+
+  for (const statement of body?.type === "statement_block" ? body.namedChildren : []) {
+    if (statement.type === "comment") continue
+    if (statement.type === "return_statement") {
+      flush()
+      add("return", label(statement))
+      return { nodes, edges }
+    }
+    pending.push(label(statement))
+  }
+  flush()
+
+  return { nodes, edges }
+}
+
+// One-line statement text without the trailing semicolon, so labels are stable
+// regardless of source formatting.
+function label(node: Node) {
+  return node.text.replace(/\s+/g, " ").replace(/;$/, "").trim()
 }
