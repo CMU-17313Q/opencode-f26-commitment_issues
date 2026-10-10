@@ -240,7 +240,7 @@ I followed these steps on main on 9 October 2026 and all 13 passed.
 
 ## Feature: `/learn-recap` command
 
-**Owner:** Amen · **Issue:** #4 · **PR:** #10
+**Owner:** Amen · **Issue:** #4 · **PR:** #10 (tests added in PR #32)
 
 > As a student using opencode to make code changes, I want a concise learning recap that explains what changed, why the change works, and the key software engineering concepts involved, so that I can understand the AI-generated solution instead of blindly accepting it.
 
@@ -248,58 +248,62 @@ This issue is the `/learn-recap` command. It uses the Learning Recap prompt temp
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-recap`. <What change context it uses.>
-3. <What the student sees.>
+1. In the chat prompt of the web app (see "Running the app" above), type `/learn-recap`.
+2. Type `/learn-recap` on its own, or add what you want recapped after it, such as a file path, a commit, or a short description. With nothing after it, the command looks at your uncommitted changes (`git diff` and `git status`).
+3. The AI replies with a short explanation of what changed, why the change works, and the software engineering concepts that are really involved, and it ends with one key takeaway. It does not modify your files. If there is nothing to explain, it says so instead of inventing a recap.
 
-### How to user-test it (about <N> minutes)
+### How to user-test it (about 5 minutes)
 
-<Setup, e.g. make a small code change first.>
+Open this repo as a project in opencode and start a new chat. Make a small change first, for example add a comment or a tiny `if` check in any source file, and leave it uncommitted.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-recap` | The command is recognized |
-| 2 | <Run it after making a change> | A recap based on that change |
-| 3 | <Read the recap> | It clearly explains what changed |
-| 4 | <Read the recap> | It explains why the change works |
-| 5 | <Read the recap> | It names relevant software engineering concepts |
-| 6 | <Check your files after running it> | No source files were modified by the command |
-| 7 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Type `/learn-recap` | The command is recognized and listed |
+| 2 | Run `/learn-recap` right after making the change | A recap about the change you just made |
+| 3 | Read the recap | It clearly explains what changed |
+| 4 | Read the recap | It explains why the change works |
+| 5 | Read the recap | It names relevant software engineering concepts, and only ones that really apply |
+| 6 | Run `git status` after the command | The only changes are the ones you made yourself, so the command did not modify any files |
+| 7 | Discard your change, then run `/learn-recap` with nothing after it | It says there is nothing to recap instead of making something up |
+| 8 | Run an existing command, for example `/review` | It still works as before |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they live:** `packages/opencode/test/command/learn-recap.test.ts` (1 file, 31 tests). The tests were first in `index.test.ts` and were moved into this file in PR #32.
 
-**How to run them:**
+**How to run them**, from `packages/opencode`:
 
 ```bash
-<command that runs only your tests>
+bun test test/command/learn-recap.test.ts
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
 **What they cover:**
 
 | Acceptance criterion (#4) | Test file / test name |
 |---------------------------|-----------------------|
-| `/learn-recap` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| Invoking the command generates a learning recap based on the relevant code/change context available to opencode | `<file>` / `<test name>` |
-| The result contains a clear explanation of what changed | `<file>` / `<test name>` |
-| The result explains why the change works | `<file>` / `<test name>` |
-| The result identifies relevant software engineering concepts when applicable | `<file>` / `<test name>` |
-| Running the command does not itself modify the student's source files | `<file>` / `<test name>` |
-| The final command uses the Learning Recap prompt template from #5 rather than duplicated prompt text | `<file>` / `<test name>` |
+| `/learn-recap` is recognized as a valid opencode command | `learn-recap.test.ts` / "learn-recap appears in the command list", "learn-recap can be retrieved individually", "learn-recap has the expected name, description, and source" |
+| Invoking the command generates a learning recap based on the relevant code/change context available to opencode | `learn-recap.test.ts` / "accepts the student's scope via $ARGUMENTS", "falls back to uncommitted changes when there is no input", "reads surrounding code instead of relying on the diff alone", "$ARGUMENTS is replaced with the given scope when invoked with arguments" |
+| The result contains a clear explanation of what changed | `learn-recap.test.ts` / "asks for what changed" |
+| The result explains why the change works | `learn-recap.test.ts` / "asks for why the change works" |
+| The result identifies relevant software engineering concepts when applicable | `learn-recap.test.ts` / "asks for the relevant software engineering concepts", "only mentions software engineering concepts genuinely relevant to the code" |
+| Running the command does not itself modify the student's source files | `learn-recap.test.ts` / "explicitly tells the model not to modify the student's files", "does not instruct the model to edit, write, delete, or remove files", "runs inline (not as a subtask) with no agent or model override" |
+| The final command uses the Learning Recap prompt template from #5 rather than duplicated prompt text | `learn-recap.test.ts` / "learn-recap template is exactly the contents of learn-recap.txt" |
 | Relevant automated tests for command registration and behavior pass | CI run on PR #10 |
-| Existing commands continue to work | `<file>` / `<test name>` |
+| Existing commands continue to work | `learn-recap.test.ts` / "init and review are still retrievable after adding learn-recap", "init, review, learn-quiz, learn-test, and learn-recap are all registered with no duplicate names" |
 
 ### Why these tests are enough
 
 - **Every acceptance criterion of #4 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them, e.g. no recent changes>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the recap, covered by user-test steps 2-5.>
-
-I followed these steps on main on <date> and all <N> passed.
+- **The tests run the real code.** They import the real `learn-recap.txt` and use the same `Command.Service` the app uses at runtime, not copies, so they fail if the template or the registration breaks.
+- **Edge cases and failures are covered:**
+  - no input falls back to uncommitted changes
+  - nothing to explain, so the AI says so instead of inventing a recap
+  - the template has no leftover `${path}` placeholder
+  - the template getter never throws
+  - the command is not a subtask and has no agent or model override
+- **What the tests don't cover is checked by hand.** The tests only check what the template *tells* the AI to do, not the AI's actual answer, because that is different every time. The quality of the recap is covered by user-test steps 2 to 5, and "no files changed" by step 6.
 
 ---
 
@@ -579,3 +583,134 @@ They also run in CI (GitHub Actions) on every PR. The tests use a **fake clock**
 - A few things can only be checked in a real browser: full screen, leaving the window, and the AI's real answer. The card and panels only show what the controller says. The user-test steps above cover all of these.
 
 **TODO (replace before submitting):** I followed these steps on main on `<date>` and all 11 passed.
+
+---
+
+## Feature: `/learn-flow` command
+
+**Owner:** Amen · **Issues:** #36 (extractor), #37 (renderer), #38 (tool), #39 (command) · **PRs:** #? (renderer), #? (extractor), #43 (tool), #? (command)
+
+> As a visual learner, I want opencode to generate an ASCII art flowchart or diagram of the current function's execution path, so that I can better understand complex logical branching.
+
+`/learn-flow` draws a function as a flowchart in the chat, then explains it in plain language. Our own code reads the function and draws the chart, so the diagram is not a guess by the AI. The AI only explains it. This is a **static** diagram of the paths the code could take. It does not run the code, so it is not a step-by-step debugger.
+
+It has four parts:
+
+- **Extractor (#36):** parses a function with tree-sitter and builds a graph of its steps and decisions.
+- **Renderer (#37):** turns that graph into ASCII boxes and arrows.
+- **Tool (#38):** a read-only `learn_flow` tool the AI calls with a file path and a function name.
+- **Command (#39):** the `/learn-flow` command and its prompt template, `learn-flow.txt`.
+
+### How to use it
+
+1. In the chat prompt of the web app, type `/learn-flow` followed by a file path and a function name, for example:
+
+```
+   /learn-flow packages/opencode/src/command/learn-flow/render.ts renderFlowchart
+```
+
+2. The AI calls the `learn_flow` tool and shows the diagram in a code block, exactly as the tool returned it.
+3. It then explains what each decision checks, where each path leads, where loops repeat, and names the concepts involved, such as early return, loop, switch or recursion. It ends with one question to check your understanding. It does not rewrite your code or change any files.
+4. If you type no file or no function, it asks which one you mean.
+
+**What it supports:** TypeScript and JavaScript functions, class methods, and arrow functions assigned to a `const`. It draws `if`/`else`, `else if` chains, `switch` (including fallthrough), `for`, `while`, `do...while`, `for...of`, `for...in`, `break`, `continue` and early returns. A recursive call is shown as its own step.
+
+**What it does not support:** `try/catch`, labeled statements, `with`, and async or generator functions are drawn as one box marked `unsupported`, and the AI says the diagram is incomplete there. Very long functions make diagrams that are tall and wide.
+
+### How to user-test it (about 5 minutes)
+
+Open this repo as a project in opencode, start a new chat, and connect a model provider. Create a file `demo.ts` in the project folder (do not commit it):
+
+```ts
+export function grade(score: number) {
+  if (score >= 90) return "A"
+  if (score >= 80) return "B"
+  return "C"
+}
+
+export function total(n: number) {
+  let sum = 0
+  for (let i = 0; i < n; i++) sum += i
+  return sum
+}
+
+export function safe(x: string) {
+  try {
+    return JSON.parse(x)
+  } catch {
+    return null
+  }
+}
+```
+
+| # | Do this | You should see |
+|---|---------|----------------|
+| 1 | Type `/learn-flow` | The command is recognized and listed |
+| 2 | Run `/learn-flow demo.ts grade` | A flowchart in a code block with `score >= 90`, `score >= 80` and the three returns, each branch under its decision |
+| 3 | Read the explanation | It says what each decision checks and where each path ends, and names early return |
+| 4 | Run `/learn-flow demo.ts total` | The diagram has a "loops back to" line, and the explanation says what repeats and when it stops |
+| 5 | Run `/learn-flow demo.ts safe` | A box marked `unsupported: try/catch`, and the AI says that part could not be drawn |
+| 6 | Run `/learn-flow demo.ts missing` | A readable message that the function was not found, and no invented diagram |
+| 7 | Run `/learn-flow` with nothing after it | It asks which file and function you mean |
+| 8 | Run `git status` | Only `demo.ts` is new, so no existing file was changed |
+| 9 | Run an existing command, for example `/review` | It still works as before |
+
+### Automated tests
+
+**Where they live:** 4 test files, 78 tests in total.
+
+| Part | File | Tests |
+|------|------|-------|
+| Renderer (#37) | `packages/opencode/test/flow/render.test.ts` | 12 |
+| Extractor (#36) | `packages/opencode/test/flow/extract.test.ts` | 42 |
+| Tool (#38) | `packages/opencode/test/tool/learn-flow.test.ts` | 10 |
+| Command (#39) | `packages/opencode/test/command/learn-flow.test.ts` | 14 |
+
+The tool is also checked by one test in `test/tool/registry.test.ts` (the tool is registered) and a snapshot in `test/tool/parameters.test.ts`.
+
+**How to run them**, from `packages/opencode`:
+
+```bash
+bun test test/flow test/tool/learn-flow.test.ts test/tool/registry.test.ts test/command/learn-flow.test.ts
+bun run typecheck
+```
+
+They also run in CI (GitHub Actions) on every PR.
+
+**What they cover:**
+
+| Acceptance criterion | Test file / test name |
+|----------------------|-----------------------|
+| **#37:** a linear flow, if/else, nested if, early return and unsupported boxes render correctly | `render.test.ts` / the linear, decision, nested if and unsupported tests |
+| **#37:** multi-way branches, loops with a back edge, and long labels render without losing text | `render.test.ts` / the multi-way, loop and long label tests |
+| **#37:** the same input always gives the same output; empty or invalid graphs return an error message instead of throwing | `render.test.ts` / the determinism, empty graph and unknown node tests |
+| **#36:** sequences, if/else, else-if chains, switch, loops, break/continue and early returns produce the correct graph | `extract.test.ts` / the sequence, if, else-if, switch and loop tests |
+| **#36:** recursion becomes its own step; try/catch, labeled statements and async functions become one `unsupported` node | `extract.test.ts` / the recursion, try/catch and async tests |
+| **#36:** an unknown function, a syntax error or empty source returns a clear error and never throws | `extract.test.ts` / the unknown name, syntax error, empty source and odd input tests |
+| **#36 to #37:** source text goes through the extractor and the renderer end to end | `extract.test.ts` / the `discount` end-to-end test |
+| **#38:** the tool is registered and discoverable | `registry.test.ts` / "exposes learn_flow", and `parameters.test.ts` snapshot |
+| **#38:** valid input returns a diagram; relative paths resolve against the project directory | `learn-flow.test.ts` (tool) / the valid input and relative path tests |
+| **#38:** a missing file, a directory, an unknown function and a syntax error return a readable message | `learn-flow.test.ts` (tool) / the matching error tests |
+| **#38:** the tool asks for the `read` permission and checks `external_directory`, and never writes | `learn-flow.test.ts` (tool) / the permissions and read-only tests |
+| **#39:** `/learn-flow` is recognized, with the right name, description and source, and runs inline | `learn-flow.test.ts` (command) / the registration and fields tests |
+| **#39:** the command uses the template file, not duplicated prompt text | `learn-flow.test.ts` (command) / "template is exactly the contents of learn-flow.txt" |
+| **#39:** the template calls the `learn_flow` tool, shows the diagram unchanged, explains it, never rewrites code and handles tool failures | `learn-flow.test.ts` (command) / the template content tests |
+| **#39:** the tool name in the template matches the registered tool id | `learn-flow.test.ts` (command) / the registry id test |
+| Relevant automated tests pass | CI runs on the PRs for #36, #37, #38 and #39 |
+| Existing commands continue to work | `learn-flow.test.ts` (command) / "init, review, learn-recap, learn-quiz, learn-test and learn-flow are all registered with no duplicate names" |
+
+### Why these tests are enough
+
+- **Every acceptance criterion of #36 to #39 has at least one test** (table above).
+- **The tests run the real code.** The extractor tests parse real source with tree-sitter, the renderer tests call the real `renderFlowchart`, the tool tests run the real tool with a temporary project folder, and the command tests use the real `Command.Service` and the real `learn-flow.txt`. One test sends source text through the extractor and the renderer together.
+- **Edge cases and failures are covered:** empty and invalid graphs, unknown nodes, unknown functions, syntax errors, empty source, odd input such as null characters and unterminated strings, missing files, directories, paths outside the project, and unsupported syntax. None of these throws.
+- **The parts are small and separate.** The extractor and the renderer are plain functions with no AI calls, so their tests are exact and repeatable.
+- **What the tests don't cover is checked by hand.** The tests check what the template *tells* the AI to do, not what a live model answers, and they cannot check how readable a diagram is. User-test steps 2 to 7 cover those.
+
+### Known limitations
+
+- Only TypeScript and JavaScript are supported. The extractor uses `tree-sitter-typescript` 0.23.2, while the other grammars in the repo are 0.25.x. It loads without errors and is covered by the tests.
+- The diagram is static. It shows the order of decisions, not the values of variables.
+- Constructs listed under "What it does not support" show as one `unsupported` box.
+
+<TODO before submitting: "I followed these steps on main and all 9 passed.">

@@ -1,0 +1,9 @@
+Draw a text flowchart of one function's control flow (branches, loops, returns).
+
+Usage:
+- Use this tool when you need to see or explain the control flow of a single function in a TypeScript or JavaScript file.
+- Pass `filePath` (absolute, or relative to the project directory) and `functionName` (a function declaration, a `const` arrow function, or a class method).
+- The result is an ASCII diagram: boxes for steps, decisions and returns, with `yes`/`no` and `case` branches and "loops back" markers for loops.
+- Constructs it cannot draw yet, such as try/catch and async or generator functions, appear as boxes marked "unsupported".
+- If the file or function is not found, or the source has syntax errors, the tool returns a readable message instead of a diagram.
+- This tool only reads files. It never writes or changes anything.

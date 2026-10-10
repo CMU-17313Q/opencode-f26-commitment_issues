@@ -12,6 +12,7 @@ import PROMPT_REVIEW from "./template/review.txt"
 import PROMPT_LEARN_QUIZ from "./template/learn-quiz.txt"
 import PROMPT_LEARN_TEST from "./template/test-explanation.txt"
 import PROMPT_LEARN_RECAP from "./template/learn-recap.txt"
+import PROMPT_LEARN_FLOW from "./template/learn-flow.txt"
 import { LegacyEvent } from "@opencode-ai/schema/legacy-event"
 
 type State = {
@@ -52,6 +53,7 @@ export const Default = {
   LEARN_QUIZ: "learn-quiz",
   LEARN_TEST: "learn-test",
   LEARN_RECAP: "learn-recap",
+  LEARN_FLOW: "learn-flow",
 } as const
 
 export interface Interface {
@@ -118,6 +120,15 @@ const layer = Layer.effect(
           return PROMPT_LEARN_RECAP
         },
         hints: hints(PROMPT_LEARN_RECAP),
+      }
+      commands[Default.LEARN_FLOW] = {
+        name: Default.LEARN_FLOW,
+        description: "draw a flowchart of a function and explain it",
+        source: "command",
+        get template() {
+          return PROMPT_LEARN_FLOW
+        },
+        hints: hints(PROMPT_LEARN_FLOW),
       }
 
       for (const [name, command] of Object.entries(cfg.command ?? {})) {
