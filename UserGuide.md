@@ -1,11 +1,3 @@
-<!--
-HOW TO USE THIS FILE (delete this comment block before submitting)
-
-Each section below is prefilled with the owner, issue, PR and acceptance criteria.
-Fill in every <placeholder> in YOUR section only. Delete the "Hint:" lines when done.
-Do not edit other people's sections. Follow your own user-test steps on main, then fill in the last line.
--->
-
 # User Guide: Learning Companion
 
 The Learning Companion helps students understand code written with opencode instead of just accepting it. It adds commands that explain code changes, explain tests, and ask reflection questions, plus the reusable prompt templates behind them.
@@ -313,60 +305,70 @@ They also run in CI (GitHub Actions) on every PR.
 
 > As a student using opencode to make code changes, I want a concise learning recap that explains what changed, why the change works, and the key software engineering concepts involved, so that I can understand the AI-generated solution instead of blindly accepting it.
 
-This issue is the reusable prompt template behind the `/learn-recap` command (#4).
+This issue is the reusable prompt template behind the `/learn-recap` command (#4). Its purpose is to help students understand AI-generated code changes rather than simply accepting the solution. The template guides opencode to produce a structured, educational explanation grounded in the actual code and its context.
 
 ### How to use it
 
-1. <Where the template lives, e.g. `packages/.../learning-recap.txt`.>
-2. <How a student triggers it, i.e. by running `/learn-recap`.>
-3. <What the student sees.>
+1. **Locate the template.** The prompt is stored in `packages/opencode/src/command/template/learn-recap.txt`. It is registered in `packages/opencode/src/command/index.ts`, where the `/learn-recap` command loads the template directly rather than duplicating its content.
+2. **Run the command.** Open a project in opencode, make a code change, and type `/learn-recap` in the chat. Students can optionally provide a file path or specific change to focus on, such as `/learn-recap src/app.ts`. If no arguments are supplied, the template instructs opencode to inspect uncommitted changes using `git diff`, `git diff --cached`, and `git status --short`.
+3. **Read the learning recap.** The AI responds with four structured sections:
+   - **What Changed:** Summarizes the meaningful behavioral or structural changes rather than describing every edited line.
+   - **Why It Works:** Explains how the modified logic produces the intended behavior, using surrounding code for context.
+   - **Software Engineering Concepts:** Identifies relevant concepts such as abstraction, modularity, validation, testing, or error handling, but only when applicable.
+   - **Key Takeaway:** Concludes with one concise learning point.
 
-### How to user-test it (about <N> minutes)
+The template emphasizes clear, student-friendly explanations, avoids unsupported assumptions about developer intentions, and explicitly instructs the AI not to modify files or generate additional implementation unless requested.
 
-<Setup, e.g. make a code change in a project.>
+### How to user-test it (about 5–10 minutes)
+
+Open a project in opencode and make a small, uncommitted code change, such as adding input validation or modifying a conditional statement. Then open the chat and follow these steps.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | <Run `/learn-recap` after a change> | The explanation covers what changed |
-| 2 | <Read the output> | It explains why the change works |
-| 3 | <Read the output> | It names relevant software engineering concepts |
-| 4 | <Read the output> | The language is clear and student-friendly |
-| 5 | <Read the output> | It explains instead of generating extra code |
-| 6 | <Try a project in a different language or framework> | The explanation still makes sense |
+| 1 | Run `/learn-recap` after making the code change. | The response includes a **What Changed** section summarizing the meaningful changes, rather than explaining every edited line individually. |
+| 2 | Read the **Why It Works** section. | The explanation connects the modified logic to its intended behavior and refers to the surrounding code when necessary. |
+| 3 | Review the **Software Engineering Concepts** section. | The AI identifies relevant concepts, such as validation or error handling, and explains how they appear in the specific changes. Unrelated concepts should not be introduced. |
+| 4 | Read the full explanation. | The language is clear and student-friendly, unfamiliar technical terms are explained, and the response concludes with a **Key Takeaway**. |
+| 5 | Compare the response with the source files and run `git status --short`. | The AI explains the existing changes without generating unnecessary replacement code or modifying the student's files. |
+| 6 | Try `/learn-recap` on code written in another language or framework. | The same four-part structure is maintained, and the explanation adapts to the relevant language without assuming a particular framework. |
+
+**Additional edge-case check:** Run `/learn-recap` when there are no relevant code changes. The AI should acknowledge that there is nothing to explain instead of inventing a recap.
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they live:** [packages/opencode/test/command/learn-recap.test.ts](https://github.com/CMU-17313Q/opencode-f26-commitment_issues/blob/main/packages/opencode/test/command/learn-recap.test.ts) (1 file, 31 tests covering both the Learning Recap prompt template and its command integration).
 
-**How to run them:**
+**How to run them**, from `packages/opencode`:
 
 ```bash
-<command that runs only your tests>
+bun test test/command/learn-recap.test.ts
 ```
 
-They also run in CI (GitHub Actions).
+The automated tests also run through the repository's GitHub Actions test workflow on pull requests. The dedicated test suite was expanded in PR #32, which reported **31 passing tests, 0 failures, and 53 assertions**.
 
 **What they cover:**
 
 | Acceptance criterion (#5) | Test file / test name |
-|---------------------------|-----------------------|
-| The prompt asks the model to explain what changed in the relevant code | `<file>` / `<test name>` |
-| The prompt explains why the change works | `<file>` / `<test name>` |
-| The prompt identifies relevant software engineering concepts when applicable | `<file>` / `<test name>` |
-| The explanation is written in clear, student-friendly language | `<file>` / `<test name>` |
-| The prompt focuses on explanation and understanding rather than generating additional code | `<file>` / `<test name>` |
-| A reusable Learning Recap prompt template is added to the appropriate opencode prompt/template structure | `<file>` / `<test name>` |
-| The prompt does not assume a specific programming language or framework | `<file>` / `<test name>` |
-| The template can be consumed by the `/learn-recap` command without duplicating the prompt content | `<file>` / `<test name>` |
+|---|---|
+| The prompt asks the model to explain what changed in the relevant code | `learn-recap.test.ts` / "asks for what changed", "learn-recap template focuses on meaningful changes rather than line-by-line narration" |
+| The prompt explains why the change works | `learn-recap.test.ts` / "asks for why the change works", "learn-recap template reads surrounding code instead of relying on the diff alone" |
+| The prompt identifies relevant software engineering concepts when applicable | `learn-recap.test.ts` / "asks for the relevant software engineering concepts", "learn-recap template only mentions software engineering concepts genuinely relevant to the code" |
+| The explanation is written in clear, student-friendly language | `learn-recap.test.ts` / "learn-recap template uses clear, student-friendly language and explains unfamiliar terms", "learn-recap template ends with a key takeaway" |
+| The prompt focuses on explanation and understanding rather than generating additional code | `learn-recap.test.ts` / "explicitly tells the model not to modify the student's files", "does not instruct the model to edit, write, delete, or remove files", "learn-recap template focuses on meaningful changes rather than line-by-line narration" |
+| A reusable Learning Recap prompt template is added to the appropriate opencode prompt/template structure | `learn-recap.test.ts` / "learn-recap template is non-empty", "learn-recap has the expected name, description, and source", "learn-recap template getter never throws and always returns a string" |
+| The prompt does not assume a specific programming language or framework | `learn-recap.test.ts` / "learn-recap template does not assume a particular language, framework, or testing library" |
+| The template can be consumed by the `/learn-recap` command without duplicating the prompt content | `learn-recap.test.ts` / "learn-recap template is exactly the contents of learn-recap.txt", "learn-recap hints include $ARGUMENTS", "$ARGUMENTS is replaced with the given scope when invoked with arguments", "init, review, learn-quiz, learn-test, and learn-recap are all registered with no duplicate names" |
 
 ### Why these tests are enough
 
-- **Every acceptance criterion of #5 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the model's answer, covered by user-test steps 1-6.>
+- **Every acceptance criterion of #5 has at least one test.** The tests verify the template's required educational content, structured explanation, language independence, non-mutation instructions, and integration with the `/learn-recap` command. The table above maps each acceptance criterion to specific automated checks.
+- **The tests run the real code.** The test file imports the actual `learn-recap.txt` prompt as `PROMPT_LEARN_RECAP` and tests its contents directly. It also uses the real `Command.Service` implementation to verify command registration, template retrieval, and integration. This means changes that accidentally remove required instructions or break the connection between the command and its template can be detected without testing a duplicate implementation.
+- **Edge cases and failures are covered.** Tests verify that the template accepts `$ARGUMENTS`, falls back to uncommitted changes when no input is supplied, and instructs the AI not to invent explanations when there are no relevant changes. They also check that the prompt avoids unsupported developer intentions, does not assume a particular language or framework, and does not instruct the AI to modify student files. Regression tests verify that existing commands remain registered and that no duplicate command names are introduced.
+- **The template remains reusable and maintainable.** One integration test verifies that the `/learn-recap` command's template matches the actual contents of `learn-recap.txt`. This establishes the template as the single source of truth, preventing inconsistencies between a separately maintained command prompt and the reusable template.
+- **What the tests don't cover is checked by hand.** Automated tests can verify what the prompt instructs the AI to do, but they cannot guarantee the quality, clarity, or factual accuracy of every response from a live model. The six user-testing steps evaluate the actual explanation, its usefulness to students, whether it avoids unnecessary code generation, and whether it remains effective across languages and frameworks.
+Together, these tests provide coverage of the prompt's structure, educational objectives, integration, and important safeguards, while manual testing addresses the quality of the AI-generated learning experience.
 
-I followed these steps on main on <date> and all <N> passed.
+I followed these steps on main on `September 28` and all of the 6 steps passed.
 
 ---
 
@@ -499,7 +501,7 @@ They also run in CI (GitHub Actions) on every PR.
   - The prompt doesn't assume a programming language.
 - The tests can only check what the prompt *tells* the AI to do. They can't check the actual questions, because they're different every time. That's what the user-test steps above are for.
 
-<TODO before submitting: "I followed these steps on main on <date> and all 5 passed.">
+We followed these steps on main on October 9 and all 5 passed.">
 
 ---
 
@@ -594,58 +596,143 @@ They also run in CI (GitHub Actions) on every PR. The tests use a **fake clock**
 **TODO (replace before submitting):** I followed these steps on main on `<date>` and all 11 passed.
 
 ---
+## Feature: AI-xam Mock Exams and Adaptive Assessment
 
-## AI-xam: Mock Exams & Adaptive Assessment (Issue #35)
+**Owner:** Ayan Fatima · **Issue:** #35 · **PR:** #47
 
-### Before starting
+> As a student preparing for an exam, I want to upload previous exams and course materials, generate practice exams that reflect my instructor's assessment patterns, and receive personalized feedback and targeted retakes, so that I can identify weaknesses, practice more effectively, and improve my understanding before the actual assessment. AI-xam is an interactive exam-preparation feature within OpenCode's Learning Companion. Instead of generating generic practice questions, it first analyzes uploaded exams to identify an **Exam DNA**, including question formats, topic distribution, difficulty, and assessment structure.
 
-AI-xam uses a configured OpenCode server and any model supported by its analysis transport. For the current course demonstration, the selected model is `anthropic/claude-haiku-5-5`. Add the provider API credential using `bun run --cwd packages/opencode dev providers login --provider anthropic` from the repo root (never commit credentials). Running the tests and CI requires **no API key**.
+Students can then generate customized mock exams, take them under timed conditions, receive question-level and topic-wise feedback, and practice weaker areas through targeted retakes. The feature uses an AI model through OpenCode for analysis, question generation, and grading, while keeping document validation, exam structure, and scoring logic separate and testable.
 
-Start the server from repository root:
+### How to use it
 
-```sh
+1. **Open AI-xam.** Start the OpenCode web application with a configured AI provider. On the homepage, select **Open AI-xam** from the Learning Companion card. The implementation is primarily located in `packages/app/src/pages/ai-xam/`, with its homepage entry connected through `packages/app/src/pages/home.tsx`.
+2. **Upload past exams and course materials.** AI-xam provides separate upload areas for *Past Exams* and *Course Materials*. Students can upload multiple PDF, TXT, or Markdown documents, up to 10 MB per file. At least one document from each category is required before analysis.
+3. **Review the prepared sources.** Select **Review Sources** to validate the uploaded documents. AI-xam identifies their formats, prepares readable text, verifies PDF file signatures, and displays the documents for confirmation. Invalid or unreadable files produce descriptive errors.
+4. **Generate Exam DNA.** Select **Generate Exam DNA**. AI-xam uses the configured OpenCode model to analyze assessment patterns and displays a structured dashboard containing:
+   - Observed question counts, question formats, and approximate difficulty.
+   - Topic distribution with visual indicators.
+   - References to questions and subparts supporting each finding.
+   - Key observations about assessment structure.
+   - Explicit limitations when the available evidence is insufficient.
+5. **Customize a mock exam.** Select **Build my mock exam**. Students can choose the difficulty (easy, moderate, hard, or mixed), the number of questions (1–20), question formats, and examination duration (5–180 minutes). AI-xam then requests original practice questions grounded in the uploaded materials and identified topics.
+6. **Take the interactive examination.** The exam displays one question at a time with a countdown timer. Students can navigate between questions, type or select answers, and flag questions for review. Their answers are preserved while navigating within the current session. Reference answers and marking rubrics are not displayed during the examination. The timer automatically triggers submission when time expires.
+7. **Receive grading and feedback.** After submission, AI-xam requests AI-assisted grading using the generated marking criteria. The results display the total score, question-level feedback, correct/reference answers, and topic-wise percentages.
+8. **Practice weak areas.** Topics scoring below 70% are identified as weaker areas. Students can select **Targeted retake** to generate a new examination focused on those topics. The system rejects exact repetitions of previous questions and displays a comparison between the original and retake scores.
+
+The feature operates alongside existing OpenCode functionality, including Focus Mode.
+
+### How to user-test it (about 20–30 minutes, depending on AI response time)
+
+Start the OpenCode backend and web application with a configured AI provider.
+
+From the repository root, start the backend:
+
+```bash
 bun run --cwd packages/opencode dev serve --port 4096 --cors http://localhost:4444
 ```
 
-Start the web UI from `packages/app`:
+From `packages/app`, start the web application:
 
-```sh
+```bash
 bun run dev --host localhost --port 4444 --strictPort
 ```
 
-For standalone testing, visit `http://localhost:4444/src/pages/ai-xam/preview.html`. When the home-screen patch is installed, open the OpenCode home page and choose **Open AI-xam** (Focus Mode remains available).
+Open `http://localhost:4444`, select **Open AI-xam**, and prepare a sample past examination and relevant course materials. The implementation was tested using a 17-313 mock midterm and a Software Quality lecture PDF.
 
-### User testing / how it works
+| # | Do this | You should see |
+|---|---|---|
+| 1 | Open AI-xam from the OpenCode homepage. | The AI-xam interface opens without disrupting Focus Mode or the rest of OpenCode. |
+| 2 | Upload a PDF past exam and PDF course material into their respective categories. | Both documents appear in the correct upload areas, with their filenames and file counts displayed. |
+| 3 | Attempt to upload an unsupported or invalid file. | A descriptive validation error appears instead of accepting the invalid document. |
+| 4 | Select **Review Sources**. | A prepared-sources screen displays the uploaded documents, their categories, and verification information. |
+| 5 | Select **Generate Exam DNA**. | An analysis loading state appears, followed by an AI-generated Exam DNA dashboard. |
+| 6 | Review the Exam DNA dashboard. | Question counts, formats, topic distribution, difficulty, and supporting references are displayed. |
+| 7 | Read the observations and limitations. | Findings are tied to the uploaded examination, and missing information or uncertain conclusions are acknowledged rather than invented. |
+| 8 | Select **Build my mock exam**, choose five questions, and customize the difficulty, formats, and duration. | The selected settings are accepted and a personalized examination is generated. |
+| 9 | Inspect the generated questions. | Questions relate to the uploaded course material and identified topics, with appropriate formats and point values. |
+| 10 | Answer a question, navigate forward, then return to it. | The previous answer is preserved. The question navigation controls and countdown timer function correctly. |
+| 11 | Flag a question for review. | The question is visibly marked as flagged and the flagged-question count updates. |
+| 12 | Inspect the examination before submitting. | Reference answers and grading rubrics are not shown in the exam-taking interface. |
+| 13 | Submit the examination for grading. | AI-xam displays overall marks, topic-wise percentages, question-level feedback, and marking criteria. |
+| 14 | Review the topic performance summary. | Topic scores are calculated from the points awarded, and topics scoring below 70% are identified as weaker areas. |
+| 15 | Select **Targeted retake** after scoring below 70% in a topic. | A new examination focuses on weaker topics without exactly repeating previous question prompts. |
+| 16 | Complete and submit the retake. | AI-xam displays the new results and compares the retake percentage with the original score. |
+| 17 | Return to the homepage and use an existing OpenCode feature. | AI-xam closes normally, and existing features remain accessible. |
 
-1. Upload one or more **Past Exams** and **Course Materials** separately. Allowed formats: PDF, TXT, MD; up to 10 MB per file. Do not upload private/student data without appropriate permission. Files are sent to the configured AI provider for analysis when **Generate Exam DNA** is clicked.
-2. Review and verify each prepared document, then click **Generate Exam DNA**.
-3. Examine real AI-generated Exam DNA: question-format frequencies (sometimes counted by subpart), topics, difficulty, supporting exam evidence, and explicit limitations. AI output is validated, but factual conclusions still need user review.
-4. Select **Build my mock exam**. Customize question count (1–20), difficulty, formats, and duration (5–180 minutes); then click **Generate mock exam**.
-5. Answer each question; navigation preserves typed answers. Flag questions for review. The timer counts down, automatically submitting when time expires. Mark schemes remain hidden from the exam-taking UI.
-6. Submit for Claude grading. Review point totals, topic-wise performance, answer-specific feedback, and reference answers/rubrics (revealed only after grading). For any topic under 70%, choose **Targeted retake** to generate new questions and compare overall performance with the original.
-7. If generating or grading fails, review the error and retry; grading failures preserve submitted answers and do not automatically resend a paid request.
+For error-handling verification, also attempt an invalid examination configuration and simulate an unavailable AI provider. The application should present an error instead of accepting invalid data or silently producing an incorrect result. Grading failures should preserve submitted answers and allow a manual retry.
 
-### Automated testing
+### Automated tests
 
-In `packages/app`, run:
+**Where they live:** [packages/app/src/pages/ai-xam](https://github.com/CMU-17313Q/opencode-f26-commitment_issues/tree/ayanf/ai-xam/packages/app/src/pages/ai-xam) (**9 test files, 68 tests**).
 
-```sh
+The test files are organized alongside the corresponding implementation modules:
+
+| Test file | Tests | What it verifies |
+|---|---:|---|
+| `domain/document-validation.test.ts` | 9 | Supported formats, file extensions, duplicate names, empty documents, and size limits. |
+| `domain/documents.test.ts` | 9 | Upload categories, collection limits, adding/removing files, and minimum source requirements. |
+| `services/document-ingestion.test.ts` | 11 | Text and Markdown processing, PDF signature checks, invalid text encodings, and ingestion failures. |
+| `services/source-review.test.ts` | 5 | Preparation of valid sources and rejection of missing, invalid, or unreadable documents. |
+| `domain/exam-dna-validation.test.ts` | 9 | Exam DNA structure, evidence references, question formats, numerical estimates, and unsupported findings. |
+| `ai/exam-dna-ai.test.ts` | 13 | AI prompt construction, distinction between exam and course sources, structured JSON parsing, and evidence-backed output. |
+| `ai/analyze-exam-dna.test.ts` | 6 | Analysis orchestration, PDF attachment encoding, input requirements, and model failures. |
+| `domain/mock-exam.test.ts` | 4 | Exam settings, generated-question validation, scoring calculations, weak-topic detection, and invalid grades. |
+| `ai/mock-exam-ai.test.ts` | 2 | Mock-exam generation and grading orchestration, topic grounding, repeated-question rejection, and simulated provider errors. |
+
+**How to run them**, from `packages/app`:
+
+```bash
 bun run typecheck
 bun test ./src/pages/ai-xam/
 ```
 
-- `domain/document-validation.test.ts`, `documents.test.ts`, `services/document-ingestion.test.ts`, `source-review.test.ts` validate upload limitations, file processing, and categories.
-- `domain/exam-dna-validation.test.ts`, `ai/exam-dna-ai.test.ts`, `ai/analyze-exam-dna.test.ts` test Exam DNA contracts, parsing, transport injection, evidence, and error handling.
-- `domain/mock-exam.test.ts` validates question structure, reject invalid AI payloads, scoring, missing/duplicate grades, topic scores, and weak-topic detection.
-- `ai/mock-exam-ai.test.ts` tests generation/grading through a mock transport without paid API access, including hallucinated topics and simulated provider errors.
+**Verified local result:**
 
-These are deterministic automated tests, not proof that every live provider call succeeds. Separately test one `.txt` and one `.pdf` end-to-end with a configured provider. The current upload verifier checks PDF signatures but does not guarantee visual PDF reading; actual PDF attachment support needs to be checked on the desired OpenCode deployment.
+```text
+68 pass
+0 fail
+135 expect() calls
+Ran 68 tests across 9 files.
+```
 
-### Implementation, privacy, and limitations
+TypeScript checking also completed successfully.
 
-All work is isolated under `packages/app/src/pages/ai-xam`, apart from one optional home-screen import and card in `pages/home.tsx`. The selected Anthropic model and local server URL are currently defaulted in `ai-xam-page.tsx`; other deployments should pass the active OpenCode server and choose a configured provider. Credentials are managed by OpenCode, not by AI-xam's browser code or CI. Avoid exposing local dev server (currently without password) outside localhost.
+These tests are included in the application's unit-test scope used by the repository's GitHub Actions workflow on pull requests. They use mocked AI responses and do not require an API key or paid provider calls.
 
-Question grading uses a generated reference answer/rubric and therefore may be imperfect. The question reference answers remain stored client-side and hidden in the normal exam-taking interface (not a secure proctoring/anti-cheat solution). Answers are preserved across question navigation but not across browser reloads. PDFs and long documents may use significant AI tokens and cost. Manual QA and a team review are necessary before claiming full production readiness.
+### What they cover
+
+| Acceptance criterion (#35) | Test file / test name |
+|---|---|
+| Students can upload multiple supported documents in separate categories. | `document-validation.test.ts` / "accepts a valid PDF", "accepts text and Markdown documents"; `documents.test.ts` / "keeps exams and course materials separate", "enforces the maximum number of documents" |
+| AI-xam identifies question formats, difficulty, topics, and examination structure without inventing unsupported evidence. | `exam-dna-validation.test.ts` / "accepts valid structured Exam DNA", "requires evidence for identified patterns"; `exam-dna-ai.test.ts` / "requires evidence-backed findings", "rejects responses referencing other documents" |
+| Students can view Exam DNA in a structured visual interface. | `exam-dna-validation.test.ts` / "accepts valid structured Exam DNA" verifies the data supplied to the dashboard. Dashboard rendering and evidence display are checked manually in user-test steps 5–7. |
+| Students can customize difficulty, question count, and format. | `mock-exam.test.ts` / "valid settings and 2 original questions", "rejects bad question counts, topics and retake duplicates". Form interactions are checked manually in step 8. |
+| Mock exams contain original questions grounded in uploaded materials, with valid formats, topics, and points. | `mock-exam-ai.test.ts` / "sends grounded text, generates an exam, and grades without the answer key in the UI"; `mock-exam.test.ts` / "valid settings and 2 original questions", "rejects bad question counts, topics and retake duplicates" |
+| Students can take timed exams with question navigation, saved answers, and flags. | The exam-taking interface is implemented in `components/mock-exam-flow.tsx`. Timer behavior, navigation, answer preservation, and flags are checked manually in steps 10–11. |
+| Reference answers and grading rubrics remain hidden until submission. | The examination interface conditionally displays marking information only in the results view. `mock-exam-ai.test.ts` checks the generation/grading flow; actual UI visibility requires manual verification in step 12. |
+| Submitted exams receive question-level AI-assisted grading and feedback. | `mock-exam-ai.test.ts` / "sends grounded text, generates an exam, and grades without the answer key in the UI"; `mock-exam.test.ts` / "rejects duplicate, missing, over-max and negative grade scores" |
+| Overall and topic-wise scores are calculated correctly and displayed visually. | `mock-exam.test.ts` / "grades, computes weighted topic scores, and identifies weakness". Visual display is checked manually in steps 13–14. |
+| Weaker topics are identified and targeted retakes contain new questions. | `mock-exam.test.ts` / "grades, computes weighted topic scores, and identifies weakness"; `mock-exam-ai.test.ts` / "rejects hallucinated topics, handles AI network errors and excludes old prompts". Retake UI behavior is checked manually in step 15. |
+| Students can compare original and retake performance. | Deterministic scoring is covered by `mock-exam.test.ts`. The actual original-versus-retake comparison is checked manually in step 16. |
+| The feature handles invalid data, empty states, and AI generation failures. | `document-ingestion.test.ts` / "returns empty results when no documents exist", "rejects invalid UTF-8"; `analyze-exam-dna.test.ts` / "rejects malformed AI output", "preserves model connection failures"; `mock-exam-ai.test.ts` / "rejects hallucinated topics, handles AI network errors and excludes old prompts" |
+| AI-xam operates independently without disrupting existing OpenCode features. | AI-xam is implemented primarily in its own page directory. Compatibility is supported by passing TypeScript checks and is verified manually through the homepage and existing features in steps 1 and 17. |
+
+### Why these tests are enough
+
+- **The core functionality is covered against Issue #35's acceptance criteria.** The table connects each criterion to its relevant automated tests or manual verification steps. The unit tests concentrate on document processing, AI data contracts, exam generation, grading, and validation, while interactive UI behavior is checked manually.
+- **The tests run the real implementation code.** Rather than duplicating the production logic, the tests import and exercise the same functions used by AI-xam. For example, `domain/mock-exam.test.ts` directly tests `validateSettings`, `parseMockExam`, `parseGrade`, `calculateResult`, and `weakTopics`. The AI orchestration tests exercise the real generation and grading functions using controlled mock transports.
+- **Edge cases and failures are covered.** Tests verify unsupported file types, duplicate uploads, invalid text encoding, oversized documents, missing source categories, malformed AI responses, unsupported evidence references, invented topics, repeated questions, invalid grade values, and provider connection failures. This is particularly important because AI-generated responses are probabilistic and may not always follow the requested format.
+- **Scoring is verified independently of AI judgment.** The grading tests use predetermined question points and awarded scores to check total marks, percentages, topic-wise results, and weak-topic identification. They also reject duplicate, missing, negative, or excessive grades. This ensures the application's mathematical calculations are testable separately from the accuracy of the model's evaluation.
+- **AI-generated content is validated before use.** Generated examinations must match the requested question count, supported formats, identified topics, and expected data structure. The system also rejects exact repetitions of previous questions during retake generation. These validations reduce the likelihood of displaying malformed or unsupported content, although they cannot guarantee semantic originality or factual correctness.
+- **Existing functionality is kept separate.** Most changes are isolated within the `ai-xam` directory, while homepage integration uses a separate entry component. This limits changes to shared application code and makes AI-xam easier to maintain and test independently.
+- **What the tests do not cover is checked by hand.** Unit tests cannot fully establish the visual accuracy of the dashboard, real-time countdown behavior, question navigation, answer persistence, browser interactions, or the quality of live AI-generated content. The user-test steps above address these gaps. Further browser automation could provide stronger regression coverage for these interactions.
+The live implementation was manually verified on October 10, using a 17-313 mock midterm and Software Quality lecture PDF. Document upload, source preparation, real AI-generated Exam DNA, and mock-exam generation were demonstrated successfully. The interface was also opened from the OpenCode homepage alongside Focus Mode.
+
+Automated testing passed with 68 tests and 0 failures on the `ayanf/ai-xam` implementation. The combination of deterministic unit tests, input and output validation, live provider testing, and manual UI verification provides meaningful coverage of the implemented functionality while recognizing the limitations of testing generative AI systems.
+
+---
+
 ## Feature: `/learn-flow` command
 
 **Owner:** Amen · **Issues:** #36 (extractor), #37 (renderer), #38 (tool), #39 (command) · **PRs:** #? (renderer), #? (extractor), #43 (tool), #? (command)
