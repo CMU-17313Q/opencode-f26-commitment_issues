@@ -693,3 +693,121 @@ test("builds a nested loop with each loop looping back to its own decision", asy
     ].join("\n"),
   )
 })
+
+test("makes a recursive call its own step node", async () => {
+  const source = "function factorial(n: number): number { if (n <= 1) { return 1 } return n * factorial(n - 1) }"
+  const graph = await graphOf(source, "factorial")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "decision", label: "n <= 1" },
+      { id: "n3", kind: "return", label: "return 1" },
+      { id: "n4", kind: "step", label: "recursive call: return n * factorial(n - 1)" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3", label: "yes" },
+      { from: "n2", to: "n4", label: "no" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+--------+",
+      "| n <= 1 |",
+      "+--------+",
+      "+-- yes",
+      "|   +----------+",
+      "|   | return 1 |",
+      "|   +----------+",
+      "+-- no",
+      "    +------------------------------------------+",
+      "    | recursive call: return n * factorial(n - |",
+      "    | 1)                                       |",
+      "    +------------------------------------------+",
+    ].join("\n"),
+  )
+})
+
+test("does not merge a recursive call into the surrounding plain statements", async () => {
+  const source = "function f(n: number) { let a = n; a = f(a - 1); let b = a; return b }"
+  expect((await graphOf(source, "f")).nodes.map((node) => node.label)).toEqual([
+    "start",
+    "let a = n",
+    "recursive call: a = f(a - 1)",
+    "let b = a",
+    "return b",
+  ])
+})
+
+test("builds one unsupported node for try/catch and continues to the next statement", async () => {
+  const source = "function f(x: number) { let a = x; try { a = risky(a) } catch (e) { a = 0 } return a }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let a = x" },
+      { id: "n3", kind: "unsupported", label: "try/catch" },
+      { id: "n4", kind: "return", label: "return a" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-----------+",
+      "| let a = x |",
+      "+-----------+",
+      "  |",
+      "  v",
+      "+------------------------+",
+      "| unsupported: try/catch |",
+      "+------------------------+",
+      "  |",
+      "  v",
+      "+----------+",
+      "| return a |",
+      "+----------+",
+    ].join("\n"),
+  )
+})
+
+test("draws an async function as a single unsupported node", async () => {
+  const source = "async function load(id: number) { const r = await fetch(id); return r }"
+  expect(await graphOf(source, "load")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "unsupported", label: "async function" },
+    ],
+    edges: [{ from: "n1", to: "n2" }],
+  })
+})
+
+test("treats a statement with a callback as a plain step without entering the callback", async () => {
+  const source = "function f(arr: number[]) { let total = 0; arr.forEach((x) => { if (x > 0) { total += x } }); return total }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let total = 0; arr.forEach((x) => { if (x > 0) { total += x } })" },
+      { id: "n3", kind: "return", label: "return total" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+    ],
+  })
+})

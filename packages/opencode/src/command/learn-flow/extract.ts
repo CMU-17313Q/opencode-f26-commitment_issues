@@ -56,9 +56,13 @@ export function findFunction(tree: Tree, name: string): FindResult {
 }
 
 // Handles plain statements, returns, (nested) ifs including else-if chains,
-// switches and loops (while, for, for...of/in, do...while). Try is not handled
-// yet and is treated as a plain statement. Code after a point where every
-// path has returned is unreachable and dropped.
+// switches and loops (while, for, for...of/in, do...while). A statement that
+// calls the function itself becomes its own "recursive call" step. try,
+// labeled statements and `with` become one "unsupported" node each, and
+// async/generator functions a single "unsupported" node for the whole
+// function. Nested functions and callbacks are never entered: the statement
+// containing them is a plain step. Code after a point where every path has
+// returned is unreachable and dropped.
 //
 // A branch that falls through rejoins at the next node created after the
 // if/switch/loop, which gives that node several incoming edges. A loop's body
@@ -67,6 +71,7 @@ export function findFunction(tree: Tree, name: string): FindResult {
 export function buildGraph(functionNode: Node): Graph {
   const nodes: GraphNode[] = []
   const edges: Edge[] = []
+  const name = functionName(functionNode)
   // Open ends of the graph so far: the next node created gets an edge from each.
   let frontier: Open[] = []
   // One entry per enclosing switch/loop: open ends of its `break`s, and (loops
@@ -85,6 +90,13 @@ export function buildGraph(functionNode: Node): Graph {
     return id
   }
 
+  // A recursive return is a step, not a return node: it is the call that matters.
+  function addReturn(node: Node, text: string) {
+    if (calls(node, name)) add("step", `recursive call: ${text}`)
+    else add("return", text)
+    frontier = []
+  }
+
   function block(statements: Node[]) {
     let pending: string[] = []
     const flush = () => {
@@ -97,8 +109,7 @@ export function buildGraph(functionNode: Node): Graph {
       if (statement.type === "comment") continue
       if (statement.type === "return_statement") {
         flush()
-        add("return", label(statement))
-        frontier = []
+        addReturn(statement, label(statement))
         continue
       }
       if (statement.type === "break_statement" && targets.length > 0) {
@@ -124,7 +135,18 @@ export function buildGraph(functionNode: Node): Graph {
         loopStatement(statement)
         continue
       }
+      const unsupported = unsupportedName(statement)
+      if (unsupported) {
+        flush()
+        add("unsupported", unsupported)
+        continue
+      }
       if (statement.type !== "if_statement") {
+        if (calls(statement, name)) {
+          flush()
+          add("step", `recursive call: ${label(statement)}`)
+          continue
+        }
         pending.push(label(statement))
         continue
       }
@@ -234,9 +256,15 @@ export function buildGraph(functionNode: Node): Graph {
 
   add("start", "start")
 
+  const whole = wholeFunctionName(functionNode)
+  if (whole) {
+    add("unsupported", whole)
+    return { nodes, edges }
+  }
+
   const body = functionNode.childForFieldName("body")
   // Expression-bodied arrow function: `(n) => n * 2` returns its expression.
-  if (body && body.type !== "statement_block") add("return", `return ${label(body)}`)
+  if (body && body.type !== "statement_block") addReturn(body, `return ${label(body)}`)
   else block(statementsOf(body))
 
   return { nodes, edges }
@@ -257,6 +285,53 @@ function label(node: Node) {
 }
 
 const LOOPS = new Set(["while_statement", "for_statement", "for_in_statement", "do_statement"])
+
+// Nested functions are never entered when looking for recursive calls.
+const FUNCTIONS = new Set([
+  "function_declaration",
+  "function_expression",
+  "generator_function",
+  "generator_function_declaration",
+  "arrow_function",
+  "method_definition",
+])
+
+// Declared name, or the variable an arrow/function expression is assigned to.
+function functionName(node: Node) {
+  const own = node.childForFieldName("name")?.text
+  if (own) return own
+  return node.parent?.type === "variable_declarator" ? node.parent.childForFieldName("name")?.text : undefined
+}
+
+// Whether `node` calls `name(...)` or `this.name(...)`, outside nested functions.
+function calls(node: Node, name: string | undefined): boolean {
+  if (!name || FUNCTIONS.has(node.type)) return false
+  if (node.type === "call_expression") {
+    const callee = node.childForFieldName("function")
+    if (callee?.type === "identifier" && callee.text === name) return true
+    if (callee?.type === "member_expression" && callee.childForFieldName("object")?.type === "this") {
+      if (callee.childForFieldName("property")?.text === name) return true
+    }
+  }
+  return node.namedChildren.some((child) => child !== null && calls(child, name))
+}
+
+// Construct name for statements the extractor can't translate yet.
+function unsupportedName(statement: Node) {
+  if (statement.type === "labeled_statement") return "labeled statement"
+  if (statement.type === "with_statement") return "with"
+  if (statement.type !== "try_statement") return undefined
+  const parts = ["try", statement.childForFieldName("handler") && "catch", statement.childForFieldName("finalizer") && "finally"]
+  return parts.filter(Boolean).join("/")
+}
+
+// async functions and generators are drawn as one unsupported node.
+function wholeFunctionName(node: Node) {
+  const kinds = node.children.map((child) => child?.type)
+  if (node.type.startsWith("generator") || kinds.includes("*")) return "generator function"
+  if (kinds.includes("async")) return "async function"
+  return undefined
+}
 
 // Condition text without its parentheses; an empty `for (;;)` condition is `true`.
 function conditionOf(node: Node | null) {
