@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { buildGraph, findFunction, parseSource } from "@/command/learn-flow/extract"
+import { buildGraph, extractGraph, findFunction, parseSource } from "@/command/learn-flow/extract"
 import { renderFlowchart } from "@/command/learn-flow/render"
 
 async function graphOf(source: string, name: string) {
@@ -810,4 +810,106 @@ test("treats a statement with a callback as a plain step without entering the ca
       { from: "n2", to: "n3" },
     ],
   })
+})
+
+test("extractGraph returns an error result for an unknown function name", async () => {
+  expect(await extractGraph("function f() { return 1 }", "missing")).toEqual({
+    ok: false,
+    error: 'Function "missing" not found.',
+  })
+})
+
+test("extractGraph returns an error result for source with syntax errors", async () => {
+  expect(await extractGraph("function f( { return 1", "f")).toEqual({
+    ok: false,
+    error: "Source has syntax errors; cannot find function.",
+  })
+})
+
+test("extractGraph returns an error result for empty source", async () => {
+  expect(await extractGraph("", "f")).toEqual({ ok: false, error: 'Function "f" not found.' })
+})
+
+test("extractGraph never throws on an empty name or odd input", async () => {
+  for (const source of ["", "   ", "\0", "}}}{{{", "function", "\u{1F4A5}", "/*", "`${"]) {
+    for (const name of ["", "f"]) {
+      const result = await extractGraph(source, name)
+      expect(result.ok).toBe(false)
+    }
+  }
+})
+
+test("extractGraph gives identical graphs for the same input twice", async () => {
+  const source = "function f(x: number) { while (x > 0) { x-- } return x }"
+  const first = await extractGraph(source, "f")
+  const second = await extractGraph(source, "f")
+  expect(first.ok).toBe(true)
+  expect(second).toEqual(first)
+})
+
+test("extractGraph does not modify its input", async () => {
+  const source = "function f() { return 1 }"
+  const name = "f"
+  await extractGraph(source, name)
+  expect(source).toBe("function f() { return 1 }")
+  expect(name).toBe("f")
+})
+
+test("extractGraph handles an arrow function with an expression body", async () => {
+  expect(await extractGraph("const double = (n: number) => n * 2", "double")).toEqual({
+    ok: true,
+    graph: {
+      nodes: [
+        { id: "n1", kind: "start", label: "start" },
+        { id: "n2", kind: "return", label: "return n * 2" },
+      ],
+      edges: [{ from: "n1", to: "n2" }],
+    },
+  })
+})
+
+test("extractGraph handles a class method", async () => {
+  expect(await extractGraph("class Cart { total(a: number) { let t = a * 2; return t } }", "total")).toEqual({
+    ok: true,
+    graph: {
+      nodes: [
+        { id: "n1", kind: "start", label: "start" },
+        { id: "n2", kind: "step", label: "let t = a * 2" },
+        { id: "n3", kind: "return", label: "return t" },
+      ],
+      edges: [
+        { from: "n1", to: "n2" },
+        { from: "n2", to: "n3" },
+      ],
+    },
+  })
+})
+
+test("goes from source text through extractGraph to renderFlowchart", async () => {
+  const result = await extractGraph(
+    "function discount(price: number) { if (price > 100) { return price * 0.9 } return price }",
+    "discount",
+  )
+  if (!result.ok) throw new Error(result.error)
+
+  expect(renderFlowchart(result.graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------------+",
+      "| price > 100 |",
+      "+-------------+",
+      "+-- yes",
+      "|   +--------------------+",
+      "|   | return price * 0.9 |",
+      "|   +--------------------+",
+      "+-- no",
+      "    +--------------+",
+      "    | return price |",
+      "    +--------------+",
+    ].join("\n"),
+  )
 })

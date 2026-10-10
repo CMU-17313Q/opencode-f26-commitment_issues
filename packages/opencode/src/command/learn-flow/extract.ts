@@ -270,6 +270,20 @@ export function buildGraph(functionNode: Node): Graph {
   return { nodes, edges }
 }
 
+export type ExtractResult = { ok: true; graph: Graph } | { ok: false; error: string }
+
+// Source text -> graph for the named function. Never throws: parse, lookup and
+// build failures all come back as an error result.
+export async function extractGraph(source: string, name: string): Promise<ExtractResult> {
+  try {
+    const found = findFunction(await parseSource(source), name)
+    if (!found.ok) return found
+    return { ok: true, graph: buildGraph(found.node) }
+  } catch (error) {
+    return { ok: false, error: `Could not extract a graph: ${error instanceof Error ? error.message : String(error)}` }
+  }
+}
+
 // A branch body is a `{ ... }` block, a lone statement, or an else clause
 // wrapping either (so `else if` yields the nested if).
 function statementsOf(node: Node | null): Node[] {
