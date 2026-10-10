@@ -414,3 +414,282 @@ test("continues a case that falls through into the next case's body", async () =
     ],
   })
 })
+
+test("builds a while loop with a back edge to the decision and a no edge to the next statement", async () => {
+  const source = "function f(n: number) { let i = 0; let sum = 0; while (i < n) { sum += i; i++ } return sum }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let i = 0; let sum = 0" },
+      { id: "n3", kind: "decision", label: "i < n" },
+      { id: "n4", kind: "step", label: "sum += i; i++" },
+      { id: "n5", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n4", to: "n3" },
+      { from: "n3", to: "n5", label: "no" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+------------------------+",
+      "| let i = 0; let sum = 0 |",
+      "+------------------------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "+-- yes",
+      "|   +---------------+",
+      "|   | sum += i; i++ |",
+      "|   +---------------+",
+      "|     |",
+      "|     v",
+      '|   (loops back to "i < n" above)',
+      "+-- no",
+      "    +------------+",
+      "    | return sum |",
+      "    +------------+",
+    ].join("\n"),
+  )
+})
+
+test("builds a for loop with the init before the decision and the update as the last body step", async () => {
+  const source = "function f(n: number) { let sum = 0; for (let i = 0; i < n; i++) { sum += i } return sum }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let sum = 0" },
+      { id: "n3", kind: "step", label: "let i = 0" },
+      { id: "n4", kind: "decision", label: "i < n" },
+      { id: "n5", kind: "step", label: "sum += i" },
+      { id: "n6", kind: "step", label: "i++" },
+      { id: "n7", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4" },
+      { from: "n4", to: "n5", label: "yes" },
+      { from: "n5", to: "n6" },
+      { from: "n6", to: "n4" },
+      { from: "n4", to: "n7", label: "no" },
+    ],
+  })
+})
+
+test("builds a for...of loop as a decision labeled with the iteration", async () => {
+  const source = "function f(items: number[]) { let sum = 0; for (const item of items) { sum += item } return sum }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let sum = 0" },
+      { id: "n3", kind: "decision", label: "for item of items" },
+      { id: "n4", kind: "step", label: "sum += item" },
+      { id: "n5", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n4", to: "n3" },
+      { from: "n3", to: "n5", label: "no" },
+    ],
+  })
+})
+
+test("builds a do...while loop whose yes edge goes back to the start of the body", async () => {
+  const source = "function f(n: number) { let i = 0; let sum = 0; do { sum += i; i++ } while (i < n); return sum }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let i = 0; let sum = 0" },
+      { id: "n3", kind: "step", label: "sum += i; i++" },
+      { id: "n4", kind: "decision", label: "i < n" },
+      { id: "n5", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4" },
+      { from: "n4", to: "n3", label: "yes" },
+      { from: "n4", to: "n5", label: "no" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+------------------------+",
+      "| let i = 0; let sum = 0 |",
+      "+------------------------+",
+      "  |",
+      "  v",
+      "+---------------+",
+      "| sum += i; i++ |",
+      "+---------------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "+-- yes",
+      '|   (loops back to "sum += i; i++" above)',
+      "+-- no",
+      "    +------------+",
+      "    | return sum |",
+      "    +------------+",
+    ].join("\n"),
+  )
+})
+
+test("builds a loop with an early return inside the body", async () => {
+  const source =
+    "function f(arr: number[], x: number) { let i = 0; while (i < arr.length) { if (arr[i] === x) { return i } i++ } return -1 }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let i = 0" },
+      { id: "n3", kind: "decision", label: "i < arr.length" },
+      { id: "n4", kind: "decision", label: "arr[i] === x" },
+      { id: "n5", kind: "return", label: "return i" },
+      { id: "n6", kind: "step", label: "i++" },
+      { id: "n7", kind: "return", label: "return -1" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n4", to: "n5", label: "yes" },
+      { from: "n4", to: "n6", label: "no" },
+      { from: "n6", to: "n3" },
+      { from: "n3", to: "n7", label: "no" },
+    ],
+  })
+})
+
+test("break leaves the loop and continue goes back to the loop", async () => {
+  const source =
+    "function f(arr: number[]) { let sum = 0; for (const v of arr) { if (v < 0) { continue } if (v > 100) { break } sum += v } return sum }"
+  expect(await graphOf(source, "f")).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let sum = 0" },
+      { id: "n3", kind: "decision", label: "for v of arr" },
+      { id: "n4", kind: "decision", label: "v < 0" },
+      { id: "n5", kind: "decision", label: "v > 100" },
+      { id: "n6", kind: "step", label: "sum += v" },
+      { id: "n7", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n4", to: "n5", label: "no" },
+      { from: "n5", to: "n6", label: "no" },
+      { from: "n6", to: "n3" },
+      { from: "n4", to: "n3", label: "yes" },
+      { from: "n5", to: "n7", label: "yes" },
+      { from: "n3", to: "n7", label: "no" },
+    ],
+  })
+})
+
+test("a break inside a switch inside a loop targets the switch, not the loop", async () => {
+  const source =
+    "function f(arr: number[]) { let sum = 0; for (const v of arr) { switch (v) { case 1: sum += 1; break; default: sum += 2 } } return sum }"
+  const graph = await graphOf(source, "f")
+  // Both cases rejoin after the switch, then loop back to the for decision.
+  expect(graph.edges).toContainEqual({ from: "n5", to: "n3" })
+  expect(graph.edges).toContainEqual({ from: "n6", to: "n3" })
+})
+
+test("builds a nested loop with each loop looping back to its own decision", async () => {
+  const source =
+    "function f(n: number, m: number) { let sum = 0; let i = 0; while (i < n) { let j = 0; while (j < m) { sum += 1; j++ } i++ } return sum }"
+  const graph = await graphOf(source, "f")
+  expect(graph).toEqual({
+    nodes: [
+      { id: "n1", kind: "start", label: "start" },
+      { id: "n2", kind: "step", label: "let sum = 0; let i = 0" },
+      { id: "n3", kind: "decision", label: "i < n" },
+      { id: "n4", kind: "step", label: "let j = 0" },
+      { id: "n5", kind: "decision", label: "j < m" },
+      { id: "n6", kind: "step", label: "sum += 1; j++" },
+      { id: "n7", kind: "step", label: "i++" },
+      { id: "n8", kind: "return", label: "return sum" },
+    ],
+    edges: [
+      { from: "n1", to: "n2" },
+      { from: "n2", to: "n3" },
+      { from: "n3", to: "n4", label: "yes" },
+      { from: "n4", to: "n5" },
+      { from: "n5", to: "n6", label: "yes" },
+      { from: "n6", to: "n5" },
+      { from: "n5", to: "n7", label: "no" },
+      { from: "n7", to: "n3" },
+      { from: "n3", to: "n8", label: "no" },
+    ],
+  })
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+------------------------+",
+      "| let sum = 0; let i = 0 |",
+      "+------------------------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| i < n |",
+      "+-------+",
+      "+-- yes",
+      "|   +-----------+",
+      "|   | let j = 0 |",
+      "|   +-----------+",
+      "|     |",
+      "|     v",
+      "|   +-------+",
+      "|   | j < m |",
+      "|   +-------+",
+      "|   +-- yes",
+      "|   |   +---------------+",
+      "|   |   | sum += 1; j++ |",
+      "|   |   +---------------+",
+      "|   |     |",
+      "|   |     v",
+      '|   |   (loops back to "j < m" above)',
+      "|   +-- no",
+      "|       +-----+",
+      "|       | i++ |",
+      "|       +-----+",
+      "|         |",
+      "|         v",
+      '|       (loops back to "i < n" above)',
+      "+-- no",
+      "    +------------+",
+      "    | return sum |",
+      "    +------------+",
+    ].join("\n"),
+  )
+})

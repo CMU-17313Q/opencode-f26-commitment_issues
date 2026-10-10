@@ -56,25 +56,31 @@ export function findFunction(tree: Tree, name: string): FindResult {
 }
 
 // Handles plain statements, returns, (nested) ifs including else-if chains,
-// and switches. Loops/try are not handled yet and are treated as plain
-// statements. Code after a point where every path has returned is
-// unreachable and dropped.
+// switches and loops (while, for, for...of/in, do...while). Try is not handled
+// yet and is treated as a plain statement. Code after a point where every
+// path has returned is unreachable and dropped.
 //
 // A branch that falls through rejoins at the next node created after the
-// if/switch, which gives that node several incoming edges. renderFlowchart
-// draws the first path in full and prints "(continues at ...)" for the others.
+// if/switch/loop, which gives that node several incoming edges. A loop's body
+// ends with an edge back to its decision node; renderFlowchart prints those
+// as "(loops back to ...)" and other rejoins as "(continues at ...)".
 export function buildGraph(functionNode: Node): Graph {
   const nodes: GraphNode[] = []
   const edges: Edge[] = []
   // Open ends of the graph so far: the next node created gets an edge from each.
   let frontier: Open[] = []
-  // One entry per enclosing switch: the open ends of its `break` statements.
-  const breaks: Open[][] = []
+  // One entry per enclosing switch/loop: open ends of its `break`s, and (loops
+  // only) of its `continue`s.
+  const targets: { exits: Open[]; continues?: Open[] }[] = []
+
+  function connect(opens: Open[], to: string) {
+    for (const open of opens) edges.push({ from: open.from, to, ...(open.label && { label: open.label }) })
+  }
 
   function add(kind: GraphNode["kind"], label: string) {
     const id = `n${nodes.length + 1}`
     nodes.push({ id, kind, label })
-    for (const open of frontier) edges.push({ from: open.from, to: id, ...(open.label && { label: open.label }) })
+    connect(frontier, id)
     frontier = [{ from: id }]
     return id
   }
@@ -95,15 +101,27 @@ export function buildGraph(functionNode: Node): Graph {
         frontier = []
         continue
       }
-      if (statement.type === "break_statement" && breaks.length > 0) {
+      if (statement.type === "break_statement" && targets.length > 0) {
         flush()
-        breaks[breaks.length - 1].push(...frontier)
+        targets[targets.length - 1].exits.push(...frontier)
+        frontier = []
+        continue
+      }
+      const loop = statement.type === "continue_statement" ? targets.findLast((target) => target.continues) : undefined
+      if (loop?.continues) {
+        flush()
+        loop.continues.push(...frontier)
         frontier = []
         continue
       }
       if (statement.type === "switch_statement") {
         flush()
         switchStatement(statement)
+        continue
+      }
+      if (LOOPS.has(statement.type)) {
+        flush()
+        loopStatement(statement)
         continue
       }
       if (statement.type !== "if_statement") {
@@ -131,9 +149,9 @@ export function buildGraph(functionNode: Node): Graph {
     const decision = add("decision", discriminant)
 
     const exits: Open[] = []
-    breaks.push(exits)
+    targets.push({ exits })
     const cases = (statement.childForFieldName("body")?.namedChildren ?? []).filter(
-      (child) => child.type === "switch_case" || child.type === "switch_default",
+      (child): child is Node => child?.type === "switch_case" || child?.type === "switch_default",
     )
     let hasDefault = false
     // Open ends of the previous case when it doesn't break or return: they
@@ -147,14 +165,71 @@ export function buildGraph(functionNode: Node): Graph {
       block(
         item
           .childrenForFieldName("body")
-          .filter((child) => child !== null)
+          .filter((child): child is Node => child !== null)
           .flatMap(statementsOf),
       )
       fallthrough = frontier
     }
-    breaks.pop()
+    targets.pop()
 
     frontier = [...exits, ...fallthrough, ...(hasDefault ? [] : [{ from: decision, label: "default" }])]
+  }
+
+  function loopStatement(statement: Node) {
+    const body = statement.childForFieldName("body")
+
+    if (statement.type === "do_statement") {
+      const target = { exits: [] as Open[], continues: [] as Open[] }
+      targets.push(target)
+      const bodyStart = nodes.length
+      block(statementsOf(body))
+      targets.pop()
+
+      // `continue` in a do...while jumps to the condition check.
+      frontier = [...frontier, ...target.continues]
+      if (frontier.length === 0) {
+        frontier = target.exits
+        return
+      }
+      const decision = add("decision", conditionOf(statement.childForFieldName("condition")))
+      // The decision was just added, so it is the target itself when the body made no nodes.
+      connect([{ from: decision, label: "yes" }], nodes[bodyStart].id)
+      frontier = [...target.exits, { from: decision, label: "no" }]
+      return
+    }
+
+    if (statement.type === "for_statement") {
+      const init = statement.childForFieldName("initializer")
+      if (init && label(init) !== "") add("step", label(init))
+      const decision = add("decision", conditionOf(statement.childForFieldName("condition")))
+      const increment = statement.childForFieldName("increment")
+      loopBody(body, decision, increment ? label(increment) : undefined)
+      return
+    }
+
+    if (statement.type === "while_statement") {
+      loopBody(body, add("decision", conditionOf(statement.childForFieldName("condition"))))
+      return
+    }
+
+    // for...of / for...in
+    const header = ["left", "operator", "right"].map((field) => statement.childForFieldName(field)?.text ?? "")
+    loopBody(body, add("decision", `for ${header.join(" ")}`.replace(/\s+/g, " ")))
+  }
+
+  // `yes` enters the body; the body's open ends (and any `continue`s) go to the
+  // optional `update` step and then back to the decision; `no` leaves the loop.
+  function loopBody(body: Node | null, decision: string, update?: string) {
+    const target = { exits: [] as Open[], continues: [] as Open[] }
+    targets.push(target)
+    frontier = [{ from: decision, label: "yes" }]
+    block(statementsOf(body))
+    targets.pop()
+
+    frontier = [...frontier, ...target.continues]
+    if (update && frontier.length > 0) add("step", update)
+    connect(frontier, decision)
+    frontier = [...target.exits, { from: decision, label: "no" }]
   }
 
   add("start", "start")
@@ -179,4 +254,11 @@ function statementsOf(node: Node | null): Node[] {
 // regardless of source formatting.
 function label(node: Node) {
   return node.text.replace(/\s+/g, " ").replace(/;$/, "").trim()
+}
+
+const LOOPS = new Set(["while_statement", "for_statement", "for_in_statement", "do_statement"])
+
+// Condition text without its parentheses; an empty `for (;;)` condition is `true`.
+function conditionOf(node: Node | null) {
+  return (node ? label(node).replace(/^\(|\)$/g, "") : "") || "true"
 }
