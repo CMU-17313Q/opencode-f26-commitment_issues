@@ -44,13 +44,12 @@ export function renderFlowchart(graph: Graph): string {
 
     const edges = outgoing.get(node.id) ?? []
     if (node.kind === "decision") {
-      const yes = edges.find((edge) => edge.label === "yes")
-      const no = edges.find((edge) => edge.label === "no")
-      if (yes) branch(yes)
-      if (no) {
-        lines.push("")
-        branch(no)
-      }
+      // Any number of labeled branches (yes/no for an if, or case labels for a
+      // switch), each stacked in full before the next one starts.
+      edges.forEach((edge, i) => {
+        if (i > 0) lines.push("")
+        branch(edge)
+      })
       return
     }
 

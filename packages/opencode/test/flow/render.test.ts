@@ -192,3 +192,58 @@ test("rendering the same graph twice gives identical output", () => {
 
   expect(renderFlowchart(graph)).toBe(renderFlowchart(graph))
 })
+
+test("renders a three-way switch-style decision, each branch stacked in full", () => {
+  // function grade(score) {
+  //   switch (true) {
+  //     case score >= 90: return "A"
+  //     case score >= 80: return "B"
+  //     default: return "C"
+  //   }
+  // }
+  const graph: Graph = {
+    nodes: [
+      { id: "1", kind: "start", label: "start" },
+      { id: "2", kind: "decision", label: "score" },
+      { id: "3", kind: "return", label: 'return "A"' },
+      { id: "4", kind: "return", label: 'return "B"' },
+      { id: "5", kind: "return", label: 'return "C"' },
+    ],
+    edges: [
+      { from: "1", to: "2" },
+      { from: "2", to: "3", label: "score >= 90" },
+      { from: "2", to: "4", label: "score >= 80" },
+      { from: "2", to: "5", label: "default" },
+    ],
+  }
+
+  expect(renderFlowchart(graph)).toBe(
+    [
+      "+-------+",
+      "| start |",
+      "+-------+",
+      "  |",
+      "  v",
+      "+-------+",
+      "| score |",
+      "+-------+",
+      "  | score >= 90",
+      "  v",
+      '+------------+',
+      '| return "A" |',
+      '+------------+',
+      "",
+      "  | score >= 80",
+      "  v",
+      '+------------+',
+      '| return "B" |',
+      '+------------+',
+      "",
+      "  | default",
+      "  v",
+      '+------------+',
+      '| return "C" |',
+      '+------------+',
+    ].join("\n"),
+  )
+})

@@ -16,8 +16,9 @@ export type Node = {
 export type Edge = {
   from: NodeID
   to: NodeID
-  // Only set on edges leaving a "decision" node, naming which branch they represent.
-  label?: "yes" | "no"
+  // Only set on edges leaving a "decision" node, naming which branch they represent
+  // ("yes"/"no" for an if, or any case label for a switch-style decision).
+  label?: string
 }
 
 export type Graph = {
