@@ -88,70 +88,159 @@ They also run in CI (GitHub Actions) on every PR.
 
 ## Feature: `/learn-quiz` command
 
-**Owner:** Dika · **Issue:** #3 · **PR:** #13
+**Owner:** Dika · **Issues:** #3, #26, #28, #30 · **PRs:** #13, #27, #29, #31
 
 > As a student preparing for labs or homework interviews, I want opencode to automatically generate short questions based on the code I just wrote that make me justify my decisions and explore "what would happen if..." hypotheticals, so that I can verify my understanding.
 
-This issue is the `/learn-quiz` command. It uses the Reflection Question prompt template (#7).
+`/learn-quiz` quizzes you on your own code. It was built in four steps, all for this one user story:
+
+| Issue | PR | What it added |
+|-------|----|---------------|
+| #3 | #13 | The `/learn-quiz` command, using the Reflection Question prompt (#7) |
+| #26 | #27 | An interactive quiz view in the terminal app: one question at a time, with back, skip and quit. The long prompt is hidden from the chat |
+| #28 | #29 | Five question types, graded multiple choice, and arguments to choose the code, the number of questions, the difficulty and the format |
+| #30 | #31 | Hints, feedback on every answer, and a summary with next steps at the end |
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-quiz`. <What context it reads, e.g. the current project or recent changes.>
-3. <What the student sees and how to answer.>
+The quiz view is part of the **terminal app (TUI)**. From the repo root, run:
 
-### How to user-test it (about <N> minutes)
+```bash
+bun dev .
+```
 
-<Setup, e.g. a project with some recent code.>
+The `.` opens the repo root as the project. Without it, opencode opens `packages/opencode`, and file paths won't match. Pick a model that supports tool calling with `/models`. If it doesn't support tool calling, the questions are printed as a plain list instead of the quiz view. In the web app, `/learn-quiz` still works, but questions show in the web app's normal question box instead of the quiz view.
+
+1. In the chat box, type `/learn-quiz` and press enter. You can add options:
+
+   ```
+   /learn-quiz [file | --diff] [--count <3-10>] [--level <level>] [--format <format>] [-h | --help]
+   ```
+
+   | Option | What it does | Default |
+   |--------|--------------|---------|
+   | `file` | Quiz on one file, e.g. `src/app.ts` | Your recent changes (uncommitted changes, or your last commits) |
+   | `--diff` | Quiz only on your uncommitted changes | |
+   | `--count <n>` | Number of questions, 3 to 10 | 5 |
+   | `--level` | `beginner`, `intermediate` or `advanced`: how deep the questions go | `intermediate` |
+   | `--format` | `mcq` multiple choice only, `frq` typed answers only, or `mixed` | `mixed` |
+   | `-h`, `--help` | Show this list without starting a quiz | |
+
+   If an option is wrong (for example `--count 50` or a file that doesn't exist), a red message explains what's wrong and shows the usage line. Nothing is sent to the AI.
+
+2. The chat shows only what you typed. The AI reads your code and opens the quiz in place of the chat box. You see one question at a time, with "Question 2 of 5" at the top. Questions mix five types: why you made a choice, what would happen if something changed, trade-offs against another approach, what the code returns for an input, and multiple-choice concept checks.
+
+3. Type your answer and press `enter` for the next question (`enter` on the last one submits). For multiple choice, pick with `↑` `↓` and `enter`, or `1`–`9`; `■` marks your pick. `shift+tab` / `tab` go back and forward and keep your answers, `ctrl+s` skips, `ctrl+o` shows or hides a hint (it points you where to look, but doesn't give the answer), and `esc` quits back to the chat.
+
+4. After you submit, the AI replies with:
+   - **Feedback** on every question. Multiple choice is marked Correct, Incorrect or Skipped, with the right answer. Typed answers get feedback on your reasoning, without the full answer and without rewriting your code.
+   - **A summary**: Strong areas, Areas to review (including every question you skipped), and at least one concrete Next step, such as a concept to read about, a function to revisit, or running `/learn-recap` on a file.
+
+### How to user-test it (about 15 minutes)
+
+Run `bun dev .` from the repo root and pick a model that supports tool calling (see above). The steps use `packages/app/src/pages/home/focus-session/controller/presets.ts`, a short file in this repo.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-quiz` | The command is recognized |
-| 2 | <Run it in a project with code> | A short set of reflection questions about that code |
-| 3 | <Read the questions> | At least one asks why a design choice was made |
-| 4 | <Read the questions> | At least one asks "what would happen if..." or about an alternative |
-| 5 | <Read the questions> | No solutions are revealed and no code is rewritten |
-| 6 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Run `/learn-quiz --help` | A help box listing every option, its default, and the quiz keys. No quiz starts |
+| 2 | Close it, then run `/learn-quiz --count 50` | A red message: `--count must be a whole number from 3 to 10`, ending with the usage line. Nothing is sent to the AI |
+| 3 | Run `/learn-quiz packages/app/src/pages/home/focus-session/controller/presets.ts` | The chat shows only your command, not the long prompt. The quiz opens at "Question 1 of 5" |
+| 4 | Go through the questions with `tab` | 5 questions, each about something specific in `presets.ts`. At least three types, including one "why" question and one "what would happen if..." question. One or two are multiple choice with `□` options that show full answer text |
+| 5 | On any question, press `ctrl+o`, then `ctrl+o` again | A hint appears below the question, then hides. The hint doesn't give the answer |
+| 6 | Type an answer, press `enter`, then `shift+tab` | You're back on the previous question with your answer still there |
+| 7 | Answer the rest, skipping one with `ctrl+s`, and press `enter` on the last question | The quiz closes. The AI replies with Feedback for every question: multiple choice marked Correct or Incorrect, typed answers get feedback without the full answer, and the skipped one is marked Skipped |
+| 8 | Read the end of the reply | A Summary with Strong areas, Areas to review (your skipped question is listed), and at least one Next step |
+| 9 | Run the same file with `--format mcq --count 3 --level beginner` | Exactly 3 questions, all multiple choice, simpler than before |
+| 10 | Run the same file with `--format frq --level advanced` | All typed questions, going deeper (for example, failure cases or how the design would change) |
+| 11 | Start any quiz and press `esc` | The quiz closes and you're back at the chat box with no error |
+| 12 | Change any file a little, then run `/learn-quiz --diff` | The questions are about the change you just made |
+| 13 | Run `/learn-recap` or `/init` | They work as before, and their prompt still shows in the chat as it did before this feature |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they are** (6 files, 102 tests for this feature):
+
+| File | Tests | What it checks |
+|------|-------|----------------|
+| `packages/opencode/test/command/learn-quiz.test.ts` | 37 | `/learn-quiz` is registered, uses the `learn-quiz.txt` prompt, and the other commands are unchanged |
+| `packages/opencode/test/command/learn-quiz-args.test.ts` | 17 | Reading the options: every option, defaults, `--help`, and every kind of invalid input |
+| `packages/opencode/test/command/reflection-questions-template.test.ts` | 22 | What the prompt tells the AI: question types, levels, formats, hints, feedback and summary. Shared with the Reflection Question template (#7) |
+| `packages/opencode/test/session/prompt.test.ts` | 8 | Running the real command: the prompt is hidden from the chat, the AI gets the checked settings, and bad options are rejected before anything is sent. Only the tests named `learn-quiz …` and "other commands still show their template" |
+| `packages/opencode/test/tool/question.test.ts` | 1 | A hint reaches the question the student sees but isn't sent back to the AI. Only "passes a quiz hint on at the end of the question text…" |
+| `packages/tui/test/cli/tui/quiz.test.tsx` | 17 | The quiz view, drawn in a test terminal with real key presses: progress, answer, back, skip, quit, multiple choice, hints and help |
 
 **How to run them:**
 
 ```bash
-<command that runs only your tests>
+cd packages/opencode
+bun test test/command/learn-quiz.test.ts test/command/learn-quiz-args.test.ts test/command/reflection-questions-template.test.ts test/tool/question.test.ts
+bun test test/session/prompt.test.ts -t "learn-quiz|other commands still"
+
+cd ../tui
+bun test test/cli/tui/quiz.test.tsx
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
-**What they cover:**
+**What they check:**
 
-| Acceptance criterion (#3) | Test file / test name |
-|---------------------------|-----------------------|
-| `/learn-quiz` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| The command uses relevant code/project context when generating questions | `<file>` / `<test name>` |
-| The response generates a short set of reflection questions | `<file>` / `<test name>` |
-| Questions include reasoning about why an implementation/design decision was made | `<file>` / `<test name>` |
-| Questions include at least one meaningful "what would happen if..." or alternative-scenario question when appropriate | `<file>` / `<test name>` |
-| Questions do not simply reveal solutions or rewrite the code | `<file>` / `<test name>` |
-| Relevant automated tests pass | CI run on PR #13 |
-| Existing opencode commands continue to work | `<file>` / `<test name>` |
+| Acceptance criterion | Test file / test name |
+|----------------------|-----------------------|
+| **#3: `/learn-quiz` command** | |
+| `/learn-quiz` is recognized as a valid opencode command | `learn-quiz.test.ts` / "is recognized as a valid command", "learn-quiz appears in the command list" |
+| The command uses relevant code/project context when generating questions | `reflection-questions-template.test.ts` / "reads the code for each scope", "falls back to the student's recent work when there is no input" |
+| The response generates a short set of reflection questions | `reflection-questions-template.test.ts` / "asks for the number of questions in the settings, grounded in the code"; `learn-quiz-args.test.ts` / "defaults to recent changes, a short quiz, intermediate depth, and mixed questions" |
+| Questions ask why an implementation/design decision was made | `reflection-questions-template.test.ts` / "mixes at least three types, always with design justification and alternative scenario"; `learn-quiz.test.ts` / "learn-quiz template asks for design-decision justification ('why')" |
+| At least one "what would happen if..." or alternative-scenario question | Same as above; `learn-quiz.test.ts` / "learn-quiz template asks for at least one alternative-scenario question" |
+| Questions do not simply reveal solutions or rewrite the code | `reflection-questions-template.test.ts` / "does not reveal answers or rewrite the code"; `learn-quiz.test.ts` / "learn-quiz template tells the model not to reveal solutions or rewrite code" |
+| Relevant automated tests pass | CI runs on PRs #13, #27, #29, #31 |
+| Existing opencode commands continue to work | `learn-quiz.test.ts` / "leaves the existing built-in commands unchanged", "init and review descriptions are unchanged" |
+| **#26: Interactive quiz view** | |
+| `/learn-quiz` opens a quiz view instead of printing questions as text | `reflection-questions-template.test.ts` / "asks the questions through the interactive quiz instead of printing them"; `quiz.test.tsx` / "quiz shows one question at a time with progress" |
+| Questions are shown one at a time with visible progress | `quiz.test.tsx` / "quiz shows one question at a time with progress" |
+| The student can answer, go back, skip, or quit | `quiz.test.tsx` / "quiz submits every answer after the last question", "quiz keeps answers when going back and forth", "skipping a question leaves it unanswered", "quitting leaves the quiz without submitting" |
+| Answers are kept when going back and forth | `quiz.test.tsx` / "quiz keeps answers when going back and forth", "multiple choice and typed answers are kept when going back" |
+| Quitting early returns to the normal session without errors | `quiz.test.tsx` / "quitting leaves the quiz without submitting"; `reflection-questions-template.test.ts` / "handles skipped questions and a dismissed quiz"; user-test step 11 |
+| The prompt template is not shown to the student | `prompt.test.ts` / "learn-quiz shows the typed command and keeps its template visible only to the model" |
+| Existing commands continue to work | `prompt.test.ts` / "other commands still show their template" |
+| **#28: Question types and arguments** | |
+| At least three question types, including design justification and alternative scenario | `reflection-questions-template.test.ts` / "offers all five question types", "mixes at least three types, always with design justification and alternative scenario" |
+| Questions reference the student's actual code | `reflection-questions-template.test.ts` / "asks for the number of questions in the settings, grounded in the code" |
+| Multiple-choice answers are graded and the result is shown | `reflection-questions-template.test.ts` / "grades multiple choice questions and shows the result"; `quiz.test.tsx` / "multiple choice questions show their options and take the highlighted one on enter" |
+| A file path or `--diff` scopes the quiz; recent changes by default | `learn-quiz-args.test.ts` / "a bare argument scopes the quiz to that file", "--diff scopes the quiz to uncommitted changes", "defaults to recent changes, …"; `reflection-questions-template.test.ts` / "reads the code for each scope" |
+| `--count` sets the number of questions | `learn-quiz-args.test.ts` / "--count sets the number of questions"; `reflection-questions-template.test.ts` / "treats the question count as the exact total, concept checks included" |
+| `--level` changes the depth of the questions | `learn-quiz-args.test.ts` / "--level sets the depth, ignoring case"; `reflection-questions-template.test.ts` / "matches question depth to each level" |
+| Invalid arguments give a clear error message | `learn-quiz-args.test.ts` / "rejects unknown options", "rejects a count that is not a whole number in range", "rejects an unknown level", "rejects an unknown format", "rejects flags with a missing value", "rejects a file together with --diff", "rejects more than one file"; `prompt.test.ts` / `learn-quiz rejects "…" with a clear error and sends nothing` (5 cases) |
+| *(Extra)* `--format` and `--help` | `learn-quiz-args.test.ts` / "--format picks multiple choice only, …", "-h and --help anywhere answer with just the usage line"; `reflection-questions-template.test.ts` / "matches the answer format to each format setting"; `quiz.test.tsx` / "help opens for -h or --help on /learn-quiz, wherever the flag is", "help explains every option and the quiz keys" |
+| *(Extra)* The AI gets the checked settings, not the raw options | `prompt.test.ts` / "learn-quiz hands the model validated settings instead of the raw flags" |
+| **#30: Feedback, hints and summary** | |
+| Each answer gets feedback on the reasoning, without the full solution or rewritten code | `reflection-questions-template.test.ts` / "gives feedback on every answer's reasoning without revealing the solution" |
+| Hints are available per question and don't give away the answer | `reflection-questions-template.test.ts` / "adds a hidden hint to every question", "keeps hints from giving away the answer"; `question.test.ts` / "passes a quiz hint on at the end of the question text, …"; `quiz.test.tsx` / "hints stay hidden until ctrl+o, and ctrl+o hides them again", "each question keeps its own hint state, including multiple choice", "questions without a hint show no hint key, …" |
+| The quiz ends with a summary of strengths and areas to review | `reflection-questions-template.test.ts` / "ends with a summary of strengths, areas to review, and next steps" |
+| The summary includes at least one concrete next step | Same as above |
+| Skipped questions appear in the summary | `reflection-questions-template.test.ts` / "reflects skipped questions in the summary" |
+| Existing commands continue to work | `prompt.test.ts` / "other commands still show their template"; `learn-quiz.test.ts` / "init and review descriptions are unchanged" |
 
 ### Why these tests are enough
 
-- **Every acceptance criterion of #3 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the generated questions, covered by user-test steps 2-5.>
+- **Every acceptance criterion of #3, #26, #28 and #30 has at least one test** (table above).
+- **The tests run the real code, not copies:**
+  - The option tests call the real option reader in `packages/opencode/src/command/learn-quiz.ts`.
+  - The command tests load the real list of commands and the real `learn-quiz.txt` prompt.
+  - `prompt.test.ts` runs the real `/learn-quiz` command against a fake AI server and checks exactly what the AI receives and what the chat shows.
+  - `quiz.test.tsx` draws the real quiz view in a test terminal and presses real keys.
+- **Edge cases and failures are covered:** every kind of bad option (with nothing sent to the AI), `--help` anywhere, going back from the first question, skipping and quitting, options labelled only "A", "B", "C", questions without a hint, and the question count including multiple choice.
+- **What the tests can't check is covered by the user-test steps:**
+  - The tests check what the prompt *tells* the AI to do, but not the AI's actual questions, hints, feedback or summary, which are different every time. Steps 4–10 and 12 cover those.
+  - The switch from the chat box to the quiz view, and back after quitting, happens in the full app. Steps 3 and 11 cover that.
 
-I followed these steps on main on <date> and all <N> passed.
+I followed these steps on main on 9 October 2026 and all 13 passed.
 
 ---
 
 ## Feature: `/learn-recap` command
 
-**Owner:** Amen · **Issue:** #4 · **PR:** #10
+**Owner:** Amen · **Issue:** #4 · **PR:** #10 (tests added in PR #32)
 
 > As a student using opencode to make code changes, I want a concise learning recap that explains what changed, why the change works, and the key software engineering concepts involved, so that I can understand the AI-generated solution instead of blindly accepting it.
 
@@ -159,58 +248,62 @@ This issue is the `/learn-recap` command. It uses the Learning Recap prompt temp
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-recap`. <What change context it uses.>
-3. <What the student sees.>
+1. In the chat prompt of the web app (see "Running the app" above), type `/learn-recap`.
+2. Type `/learn-recap` on its own, or add what you want recapped after it, such as a file path, a commit, or a short description. With nothing after it, the command looks at your uncommitted changes (`git diff` and `git status`).
+3. The AI replies with a short explanation of what changed, why the change works, and the software engineering concepts that are really involved, and it ends with one key takeaway. It does not modify your files. If there is nothing to explain, it says so instead of inventing a recap.
 
-### How to user-test it (about <N> minutes)
+### How to user-test it (about 5 minutes)
 
-<Setup, e.g. make a small code change first.>
+Open this repo as a project in opencode and start a new chat. Make a small change first, for example add a comment or a tiny `if` check in any source file, and leave it uncommitted.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-recap` | The command is recognized |
-| 2 | <Run it after making a change> | A recap based on that change |
-| 3 | <Read the recap> | It clearly explains what changed |
-| 4 | <Read the recap> | It explains why the change works |
-| 5 | <Read the recap> | It names relevant software engineering concepts |
-| 6 | <Check your files after running it> | No source files were modified by the command |
-| 7 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Type `/learn-recap` | The command is recognized and listed |
+| 2 | Run `/learn-recap` right after making the change | A recap about the change you just made |
+| 3 | Read the recap | It clearly explains what changed |
+| 4 | Read the recap | It explains why the change works |
+| 5 | Read the recap | It names relevant software engineering concepts, and only ones that really apply |
+| 6 | Run `git status` after the command | The only changes are the ones you made yourself, so the command did not modify any files |
+| 7 | Discard your change, then run `/learn-recap` with nothing after it | It says there is nothing to recap instead of making something up |
+| 8 | Run an existing command, for example `/review` | It still works as before |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they live:** `packages/opencode/test/command/learn-recap.test.ts` (1 file, 31 tests). The tests were first in `index.test.ts` and were moved into this file in PR #32.
 
-**How to run them:**
+**How to run them**, from `packages/opencode`:
 
 ```bash
-<command that runs only your tests>
+bun test test/command/learn-recap.test.ts
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
 **What they cover:**
 
 | Acceptance criterion (#4) | Test file / test name |
 |---------------------------|-----------------------|
-| `/learn-recap` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| Invoking the command generates a learning recap based on the relevant code/change context available to opencode | `<file>` / `<test name>` |
-| The result contains a clear explanation of what changed | `<file>` / `<test name>` |
-| The result explains why the change works | `<file>` / `<test name>` |
-| The result identifies relevant software engineering concepts when applicable | `<file>` / `<test name>` |
-| Running the command does not itself modify the student's source files | `<file>` / `<test name>` |
-| The final command uses the Learning Recap prompt template from #5 rather than duplicated prompt text | `<file>` / `<test name>` |
+| `/learn-recap` is recognized as a valid opencode command | `learn-recap.test.ts` / "learn-recap appears in the command list", "learn-recap can be retrieved individually", "learn-recap has the expected name, description, and source" |
+| Invoking the command generates a learning recap based on the relevant code/change context available to opencode | `learn-recap.test.ts` / "accepts the student's scope via $ARGUMENTS", "falls back to uncommitted changes when there is no input", "reads surrounding code instead of relying on the diff alone", "$ARGUMENTS is replaced with the given scope when invoked with arguments" |
+| The result contains a clear explanation of what changed | `learn-recap.test.ts` / "asks for what changed" |
+| The result explains why the change works | `learn-recap.test.ts` / "asks for why the change works" |
+| The result identifies relevant software engineering concepts when applicable | `learn-recap.test.ts` / "asks for the relevant software engineering concepts", "only mentions software engineering concepts genuinely relevant to the code" |
+| Running the command does not itself modify the student's source files | `learn-recap.test.ts` / "explicitly tells the model not to modify the student's files", "does not instruct the model to edit, write, delete, or remove files", "runs inline (not as a subtask) with no agent or model override" |
+| The final command uses the Learning Recap prompt template from #5 rather than duplicated prompt text | `learn-recap.test.ts` / "learn-recap template is exactly the contents of learn-recap.txt" |
 | Relevant automated tests for command registration and behavior pass | CI run on PR #10 |
-| Existing commands continue to work | `<file>` / `<test name>` |
+| Existing commands continue to work | `learn-recap.test.ts` / "init and review are still retrievable after adding learn-recap", "init, review, learn-quiz, learn-test, and learn-recap are all registered with no duplicate names" |
 
 ### Why these tests are enough
 
 - **Every acceptance criterion of #4 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them, e.g. no recent changes>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the recap, covered by user-test steps 2-5.>
-
-I followed these steps on main on <date> and all <N> passed.
+- **The tests run the real code.** They import the real `learn-recap.txt` and use the same `Command.Service` the app uses at runtime, not copies, so they fail if the template or the registration breaks.
+- **Edge cases and failures are covered:**
+  - no input falls back to uncommitted changes
+  - nothing to explain, so the AI says so instead of inventing a recap
+  - the template has no leftover `${path}` placeholder
+  - the template getter never throws
+  - the command is not a subtask and has no agent or model override
+- **What the tests don't cover is checked by hand.** The tests only check what the template *tells* the AI to do, not the AI's actual answer, because that is different every time. The quality of the recap is covered by user-test steps 2 to 5, and "no files changed" by step 6.
 
 ---
 
@@ -277,63 +370,72 @@ I followed these steps on main on <date> and all <N> passed.
 
 ---
 
-## Feature: `/learn-tests` command
+## Feature: `/learn-test` command
 
 **Owner:** Mohamed Waiel Shikfa · **Issue:** #6 · **PR:** #15
 
 > As a student writing tests in a new language or library, I want opencode to explain what each test does in plain language, so that I can understand the testing logic and become more confident writing tests independently in the future.
 
-This issue is the `/learn-tests` command. It uses the Test Explanation prompt template (#2).
+This is the `/learn-test` command. It was built as `/learn-tests` and merged as `/learn-test`, so that is the name you type today. It uses the Test Explanation prompt template (#2) from the section above, which is the only place the prompt text lives. The command itself is registered in `packages/opencode/src/command/index.ts`.
 
 ### How to use it
 
-1. <How to open the prompt and type the command.>
-2. Run `/learn-tests`. <How to select the tests to explain.>
-3. <What the student sees.>
+1. The command is registered in `packages/opencode/src/command/index.ts` as `learn-test`, with the description "explains what the tests are doing and what behavior they verify". It runs inline, with no subtask, agent or model override, so the answer comes back in the same chat.
+2. In a chat, type `/learn-test` and then what you want explained. This can be a file path, a test name, or a test you paste in. Unlike `/learn-quiz`, `/learn-test` takes no flags: everything after the command name goes into its one `$ARGUMENTS` placeholder. If you type nothing after it, the AI explains the test you were just discussing, or asks which test you mean.
+3. The AI answers in the order set by the Test Explanation template: what the test protects, why it matters, how it proves it, which testing ideas it uses, and what it does not catch. It ends with one question that checks your understanding. It does not rewrite the test or change any files.
 
-### How to user-test it (about <N> minutes)
+### How to user-test it (about 5 minutes)
 
-<Setup, e.g. a project with a test file.>
+Open this repo as a project in opencode and start a new chat. A good test file to try is `packages/app/src/pages/home/focus-session/controller/presets.test.ts`.
 
 | # | Do this | You should see |
 |---|---------|----------------|
-| 1 | Run `/learn-tests` | The command is recognized |
-| 2 | <Run it on a test> | The output identifies the purpose of the test |
-| 3 | <Read the output> | It describes the behavior being verified, not a line-by-line paraphrase |
-| 4 | <Read the output> | It follows the Test Explanation template |
-| 5 | Run an existing command, e.g. `<command>` | It still works as before |
+| 1 | Type `/learn-test` | The command is recognized and listed |
+| 2 | Run `/learn-test packages/app/src/pages/home/focus-session/controller/presets.test.ts` | It explains what the tests are for, not what each line does |
+| 3 | Read the answer | It names the testing ideas at work, such as a boundary case or a regression guard, and explains why the tests are built that way |
+| 4 | Read the answer | It says at least one thing the tests would not catch, and ends with one question for you |
+| 5 | Run `/learn-test` and paste a short pytest test | It says the test uses pytest, and the explanation still makes sense |
+| 6 | Run `/learn-test` with nothing after it in a new chat | It asks which test you mean |
+| 7 | Run `git status`, then run an existing command, for example `/review` | No files were changed, and `/review` still works as before |
 
 ### Automated tests
 
-**Where they live:** `<path/to/test-file.test.ts>` (<N> files, <N> tests).
+**Where they are:** `packages/opencode/test/command/learn-test.test.ts` (1 file, 26 tests). The file was first named `index.test.ts` and was renamed to `learn-test.test.ts` in PR #15. `test/command/learn-tests.test.ts` also checks this command's wiring to the real template.
 
-**How to run them:**
+**How to run them**, from `packages/opencode`:
 
 ```bash
-<command that runs only your tests>
+bun test test/command/learn-test.test.ts
 ```
 
-They also run in CI (GitHub Actions).
+They also run in CI (GitHub Actions) on every PR.
 
-**What they cover:**
+**What they check:**
 
 | Acceptance criterion (#6) | Test file / test name |
 |---------------------------|-----------------------|
-| `/learn-tests` is recognized as a valid opencode command | `<file>` / `<test name>` |
-| The output identifies the purpose of the relevant tests | `<file>` / `<test name>` |
-| The explanation describes the behavior being verified rather than merely paraphrasing code line-by-line | `<file>` / `<test name>` |
-| The final implementation uses the Test Explanation prompt template | `<file>` / `<test name>` |
+| `/learn-test` is recognized as a valid opencode command | `learn-test.test.ts` / "learn-test appears in the command list", "learn-test can be retrieved individually", "learn-test default key is 'learn-test'", "learn-test has the expected name, description, and source", "command list has no duplicate learn-test entries" |
+| The output identifies the purpose of the relevant tests | The command sends the Test Explanation template, which asks for purpose first: `learn-test.test.ts` / "learn-test template is exactly the contents of test-explanation.txt"; `learn-tests.test.ts` / "uses the Test Explanation prompt template" |
+| The explanation describes the behavior being verified rather than merely paraphrasing code line-by-line | Same as above; the template's own wording is checked in `test-explanation-template.test.ts` / "teaches instead of translating line by line" |
+| The final implementation uses the Test Explanation prompt template | `learn-test.test.ts` / "learn-test template is exactly the contents of test-explanation.txt", "learn-test template is non-empty" |
 | Relevant automated tests pass | CI run on PR #15 |
-| Existing opencode functionality remains unaffected | `<file>` / `<test name>` |
+| Existing opencode functionality remains unaffected | `learn-test.test.ts` / "init and review are still retrievable after adding learn-test", "init and review descriptions are unchanged", "init and review templates still resolve to non-empty strings", "every listed command is retrievable by name", "command names in the list are unique", "get() returns undefined for an unknown command" |
+| *(Extra)* The tests to explain reach the model, and the command runs inline | `learn-test.test.ts` / "hints() detects $ARGUMENTS", "learn-test hints match hints() computed from its template", "learn-test runs inline with no subtask, agent, or model override"; `learn-tests.test.ts` / "takes the selected tests as $ARGUMENTS" |
+| *(Extra)* The template and the hint parser stay well formed | `learn-test.test.ts` / "learn-test template has no unresolved ${path} placeholder", "learn-test template is stable across repeated reads", "learn-test template getter never throws and always returns a string", "hints() does not throw on the learn-test template", and the `hints()` unit tests for an empty template, no placeholders, `$ARGUMENTS`, and numbered placeholders |
 
 ### Why these tests are enough
 
 - **Every acceptance criterion of #6 has at least one test** (table above).
-- **The tests run the real code.** <Say which module the tests import and call.>
-- **Edge cases and failures are covered:** <list them>.
-- **What the tests don't cover is checked by hand.** <For example, the quality of the explanation, covered by user-test steps 2-4.>
+- **The tests run the real code.** They import the real `test-explanation.txt` and use the same `Command.Service` the app uses at runtime, so they fail if the registration or the template wiring breaks.
+- **Edge cases and failures are covered:**
+  - the template has no leftover `${path}` placeholder, so no path is printed literally
+  - the template getter never throws and always returns a string
+  - `get()` returns undefined for an unknown command name
+  - `hints()` returns an empty array for a template with no placeholders, dedupes and sorts numbered placeholders, and puts them before `$ARGUMENTS`
+  - adding the command did not duplicate names, break `/init` or `/review`, or change their descriptions
+- **What the tests don't cover is checked by hand.** The tests only check what the template *tells* the AI to do, not the AI's actual explanation, because that is different every time. User-test steps 2 to 6 cover that, and step 7 covers "no files changed".
 
-I followed these steps on main on <date> and all <N> passed.
+I followed these steps on main on 4 October 2026 and all 26 passed.
 
 ---
 
@@ -544,3 +646,131 @@ These are deterministic automated tests, not proof that every live provider call
 All work is isolated under `packages/app/src/pages/ai-xam`, apart from one optional home-screen import and card in `pages/home.tsx`. The selected Anthropic model and local server URL are currently defaulted in `ai-xam-page.tsx`; other deployments should pass the active OpenCode server and choose a configured provider. Credentials are managed by OpenCode, not by AI-xam's browser code or CI. Avoid exposing local dev server (currently without password) outside localhost.
 
 Question grading uses a generated reference answer/rubric and therefore may be imperfect. The question reference answers remain stored client-side and hidden in the normal exam-taking interface (not a secure proctoring/anti-cheat solution). Answers are preserved across question navigation but not across browser reloads. PDFs and long documents may use significant AI tokens and cost. Manual QA and a team review are necessary before claiming full production readiness.
+## Feature: `/learn-flow` command
+
+**Owner:** Amen · **Issues:** #36 (extractor), #37 (renderer), #38 (tool), #39 (command) · **PRs:** #? (renderer), #? (extractor), #43 (tool), #? (command)
+
+> As a visual learner, I want opencode to generate an ASCII art flowchart or diagram of the current function's execution path, so that I can better understand complex logical branching.
+
+`/learn-flow` draws a function as a flowchart in the chat, then explains it in plain language. Our own code reads the function and draws the chart, so the diagram is not a guess by the AI. The AI only explains it. This is a **static** diagram of the paths the code could take. It does not run the code, so it is not a step-by-step debugger.
+
+It has four parts:
+
+- **Extractor (#36):** parses a function with tree-sitter and builds a graph of its steps and decisions.
+- **Renderer (#37):** turns that graph into ASCII boxes and arrows.
+- **Tool (#38):** a read-only `learn_flow` tool the AI calls with a file path and a function name.
+- **Command (#39):** the `/learn-flow` command and its prompt template, `learn-flow.txt`.
+
+### How to use it
+
+1. In the chat prompt of the web app, type `/learn-flow` followed by a file path and a function name, for example:
+
+```
+   /learn-flow packages/opencode/src/command/learn-flow/render.ts renderFlowchart
+```
+
+2. The AI calls the `learn_flow` tool and shows the diagram in a code block, exactly as the tool returned it.
+3. It then explains what each decision checks, where each path leads, where loops repeat, and names the concepts involved, such as early return, loop, switch or recursion. It ends with one question to check your understanding. It does not rewrite your code or change any files.
+4. If you type no file or no function, it asks which one you mean.
+
+**What it supports:** TypeScript and JavaScript functions, class methods, and arrow functions assigned to a `const`. It draws `if`/`else`, `else if` chains, `switch` (including fallthrough), `for`, `while`, `do...while`, `for...of`, `for...in`, `break`, `continue` and early returns. A recursive call is shown as its own step.
+
+**What it does not support:** `try/catch`, labeled statements, `with`, and async or generator functions are drawn as one box marked `unsupported`, and the AI says the diagram is incomplete there. Very long functions make diagrams that are tall and wide.
+
+### How to user-test it (about 5 minutes)
+
+Open this repo as a project in opencode, start a new chat, and connect a model provider. Create a file `demo.ts` in the project folder (do not commit it):
+
+```ts
+export function grade(score: number) {
+  if (score >= 90) return "A"
+  if (score >= 80) return "B"
+  return "C"
+}
+
+export function total(n: number) {
+  let sum = 0
+  for (let i = 0; i < n; i++) sum += i
+  return sum
+}
+
+export function safe(x: string) {
+  try {
+    return JSON.parse(x)
+  } catch {
+    return null
+  }
+}
+```
+
+| # | Do this | You should see |
+|---|---------|----------------|
+| 1 | Type `/learn-flow` | The command is recognized and listed |
+| 2 | Run `/learn-flow demo.ts grade` | A flowchart in a code block with `score >= 90`, `score >= 80` and the three returns, each branch under its decision |
+| 3 | Read the explanation | It says what each decision checks and where each path ends, and names early return |
+| 4 | Run `/learn-flow demo.ts total` | The diagram has a "loops back to" line, and the explanation says what repeats and when it stops |
+| 5 | Run `/learn-flow demo.ts safe` | A box marked `unsupported: try/catch`, and the AI says that part could not be drawn |
+| 6 | Run `/learn-flow demo.ts missing` | A readable message that the function was not found, and no invented diagram |
+| 7 | Run `/learn-flow` with nothing after it | It asks which file and function you mean |
+| 8 | Run `git status` | Only `demo.ts` is new, so no existing file was changed |
+| 9 | Run an existing command, for example `/review` | It still works as before |
+
+### Automated tests
+
+**Where they live:** 4 test files, 78 tests in total.
+
+| Part | File | Tests |
+|------|------|-------|
+| Renderer (#37) | `packages/opencode/test/flow/render.test.ts` | 12 |
+| Extractor (#36) | `packages/opencode/test/flow/extract.test.ts` | 42 |
+| Tool (#38) | `packages/opencode/test/tool/learn-flow.test.ts` | 10 |
+| Command (#39) | `packages/opencode/test/command/learn-flow.test.ts` | 14 |
+
+The tool is also checked by one test in `test/tool/registry.test.ts` (the tool is registered) and a snapshot in `test/tool/parameters.test.ts`.
+
+**How to run them**, from `packages/opencode`:
+
+```bash
+bun test test/flow test/tool/learn-flow.test.ts test/tool/registry.test.ts test/command/learn-flow.test.ts
+bun run typecheck
+```
+
+They also run in CI (GitHub Actions) on every PR.
+
+**What they cover:**
+
+| Acceptance criterion | Test file / test name |
+|----------------------|-----------------------|
+| **#37:** a linear flow, if/else, nested if, early return and unsupported boxes render correctly | `render.test.ts` / the linear, decision, nested if and unsupported tests |
+| **#37:** multi-way branches, loops with a back edge, and long labels render without losing text | `render.test.ts` / the multi-way, loop and long label tests |
+| **#37:** the same input always gives the same output; empty or invalid graphs return an error message instead of throwing | `render.test.ts` / the determinism, empty graph and unknown node tests |
+| **#36:** sequences, if/else, else-if chains, switch, loops, break/continue and early returns produce the correct graph | `extract.test.ts` / the sequence, if, else-if, switch and loop tests |
+| **#36:** recursion becomes its own step; try/catch, labeled statements and async functions become one `unsupported` node | `extract.test.ts` / the recursion, try/catch and async tests |
+| **#36:** an unknown function, a syntax error or empty source returns a clear error and never throws | `extract.test.ts` / the unknown name, syntax error, empty source and odd input tests |
+| **#36 to #37:** source text goes through the extractor and the renderer end to end | `extract.test.ts` / the `discount` end-to-end test |
+| **#38:** the tool is registered and discoverable | `registry.test.ts` / "exposes learn_flow", and `parameters.test.ts` snapshot |
+| **#38:** valid input returns a diagram; relative paths resolve against the project directory | `learn-flow.test.ts` (tool) / the valid input and relative path tests |
+| **#38:** a missing file, a directory, an unknown function and a syntax error return a readable message | `learn-flow.test.ts` (tool) / the matching error tests |
+| **#38:** the tool asks for the `read` permission and checks `external_directory`, and never writes | `learn-flow.test.ts` (tool) / the permissions and read-only tests |
+| **#39:** `/learn-flow` is recognized, with the right name, description and source, and runs inline | `learn-flow.test.ts` (command) / the registration and fields tests |
+| **#39:** the command uses the template file, not duplicated prompt text | `learn-flow.test.ts` (command) / "template is exactly the contents of learn-flow.txt" |
+| **#39:** the template calls the `learn_flow` tool, shows the diagram unchanged, explains it, never rewrites code and handles tool failures | `learn-flow.test.ts` (command) / the template content tests |
+| **#39:** the tool name in the template matches the registered tool id | `learn-flow.test.ts` (command) / the registry id test |
+| Relevant automated tests pass | CI runs on the PRs for #36, #37, #38 and #39 |
+| Existing commands continue to work | `learn-flow.test.ts` (command) / "init, review, learn-recap, learn-quiz, learn-test and learn-flow are all registered with no duplicate names" |
+
+### Why these tests are enough
+
+- **Every acceptance criterion of #36 to #39 has at least one test** (table above).
+- **The tests run the real code.** The extractor tests parse real source with tree-sitter, the renderer tests call the real `renderFlowchart`, the tool tests run the real tool with a temporary project folder, and the command tests use the real `Command.Service` and the real `learn-flow.txt`. One test sends source text through the extractor and the renderer together.
+- **Edge cases and failures are covered:** empty and invalid graphs, unknown nodes, unknown functions, syntax errors, empty source, odd input such as null characters and unterminated strings, missing files, directories, paths outside the project, and unsupported syntax. None of these throws.
+- **The parts are small and separate.** The extractor and the renderer are plain functions with no AI calls, so their tests are exact and repeatable.
+- **What the tests don't cover is checked by hand.** The tests check what the template *tells* the AI to do, not what a live model answers, and they cannot check how readable a diagram is. User-test steps 2 to 7 cover those.
+
+### Known limitations
+
+- Only TypeScript and JavaScript are supported. The extractor uses `tree-sitter-typescript` 0.23.2, while the other grammars in the repo are 0.25.x. It loads without errors and is covered by the tests.
+- The diagram is static. It shows the order of decisions, not the values of variables.
+- Constructs listed under "What it does not support" show as one `unsupported` box.
+
+<TODO before submitting: "I followed these steps on main and all 9 passed.">

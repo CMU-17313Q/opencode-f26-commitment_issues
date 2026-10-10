@@ -468,3 +468,24 @@ exports[`tool parameters JSON Schema (wire shape) write 1`] = `
   "type": "object",
 }
 `;
+
+exports[`tool parameters JSON Schema (wire shape) learn_flow 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "filePath": {
+      "description": "The path to the TypeScript or JavaScript file, absolute or relative to the project directory",
+      "type": "string",
+    },
+    "functionName": {
+      "description": "The name of the function to draw: a function declaration, a const arrow function, or a class method",
+      "type": "string",
+    },
+  },
+  "required": [
+    "filePath",
+    "functionName",
+  ],
+  "type": "object",
+}
+`;
