@@ -1,4 +1,4 @@
-FROM oven/bun:1
+FROM oven/bun:1.3.14
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git ca-certificates curl ripgrep \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY . .
-RUN bun install
+RUN bun install --frozen-lockfile
 
 EXPOSE 4096
 
