@@ -50,7 +50,7 @@ jobs:
           scan-args: |-
             --config=./osv-scanner.toml
             --format=json
-            --output=osv-results.json
+            --output-file=osv-results.json
             --recursive
             ./
 
@@ -77,7 +77,7 @@ jobs:
           {
             echo "## OSV-Scanner results"
             echo
-            echo "Findings: **${total}**. Blocking (High/Critical, CVSS >= 7.0, with a fixed version): **${blocking}**."
+            echo "Findings: **${total}**. Blocking (Critical, CVSS >= 9.0, with a fixed version): **${blocking}**."
             echo
             if [ "${total}" -gt 0 ]; then
               echo "| Blocking | Severity | Score | Package | Version | Fixed in | Advisories | Lockfile |"
@@ -87,9 +87,7 @@ jobs:
           } | tee -a "${GITHUB_STEP_SUMMARY}"
           echo "blocking=${blocking}" >> "${GITHUB_OUTPUT}"
 
-      - name: Fail on High/Critical findings with a fix
-        # Report-only during rollout: remove continue-on-error to enforce.
-        continue-on-error: true
+      - name: Fail on Critical findings with a fix
         env:
           BLOCKING: ${{ steps.summary.outputs.blocking }}
         run: |
@@ -97,7 +95,7 @@ jobs:
             jq -r '.[] | select(.blocking) | "::error title=\(.package)@\(.version)::\(.severity) \(.ids | join(" / ")), fixed in \(.fixed | join(", ")) (\(.source))"' osv-findings.json
             exit 1
           fi
-          echo "No High/Critical findings with a fixed version available."
+          echo "No Critical findings with a fixed version available."
 
       - name: Upload scan results
         if: always()
@@ -137,7 +135,7 @@ jobs:
           scan-args: |-
             --config=./osv-scanner.toml
             --format=sarif
-            --output=osv-results.sarif
+            --output-file=osv-results.sarif
             --recursive
             ./
 

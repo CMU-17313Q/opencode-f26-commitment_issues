@@ -150,8 +150,9 @@ every `bun.lock` in the repo — the root one plus `sdks/vscode`, `github/`, `ar
 `packages/console/resource`. It reads the lockfiles directly, so it doesn't install anything and finishes in about a minute.
 
 - **On PRs that change a `bun.lock`, a `package.json`, `osv-scanner.toml` or the workflow itself**, it fails only on
-  High/Critical findings (CVSS ≥ 7.0) that have a fixed version available. Everything else is listed in the job
-  summary, and the full results are attached to the run as the `osv-scanner-results-*` artifact.
+  Critical findings (CVSS ≥ 9.0) that have a fixed version available. Everything else is listed in the job
+  summary, and the full results are attached to the run as the `osv-scanner-results-*` artifact. If you change
+  [`findings.jq`](.github/osv-scanner/findings.jq), run `bash .github/osv-scanner/test-findings.sh`.
 - **Nightly on `main`** (~5:30am ET), it re-scans everything and uploads the results to the repo's Security tab. This
   run is report-only.
 

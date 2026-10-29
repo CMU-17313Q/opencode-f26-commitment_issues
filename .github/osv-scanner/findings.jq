@@ -4,7 +4,7 @@
 # score    groups[].max_severity (CVSS base score, computed by osv-scanner), or null
 # severity from score; falls back to the advisory's database_specific.severity
 # fixed    "fixed" events in the advisory's ranges for this package name
-# blocking High/Critical with at least one fixed version
+# blocking Critical with at least one fixed version
 #
 # Used by .github/workflows/osv-scanner.yml. Test locally with:
 #   jq -f .github/osv-scanner/findings.jq osv-results.json
@@ -36,6 +36,6 @@ def level:
       fixed: ([$vulns[].affected[]? | select(.package.name == $p.package.name) | .ranges[]?.events[]? | .fixed // empty] | unique)
     }
   | .severity = level
-  | .blocking = ((.severity == "HIGH" or .severity == "CRITICAL") and (.fixed | length > 0))
+  | .blocking = (.severity == "CRITICAL" and (.fixed | length > 0))
 ]
 | sort_by((.blocking | not), -(.score // 0))
