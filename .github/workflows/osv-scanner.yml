@@ -1,0 +1,169 @@
+name: osv-scanner
+
+on:
+  pull_request:
+    paths:
+      - "bun.lock"
+      - "**/bun.lock"
+      - "package.json"
+      - "**/package.json"
+      - "osv-scanner.toml"
+      - ".github/osv-scanner/**"
+      - ".github/workflows/osv-scanner.yml"
+  schedule:
+    - cron: "30 9 * * *" # nightly, ~5:30am ET (after e2e-regression)
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scan:
+    name: scan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      # Reads every bun.lock directly, so no Bun install is needed. osv-scanner
+      # exits non-zero both when it finds vulnerabilities and when the scan itself
+      # fails; the next step tells the two apart.
+      - name: Run OSV-Scanner
+        id: scan
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=./osv-scanner.toml
+            --format=json
+            --output-file=osv-results.json
+            --recursive
+            ./
+
+      - name: Check that the scan completed
+        env:
+          OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          if [ ! -s osv-results.json ] || ! jq -e 'has("results")' osv-results.json > /dev/null; then
+            echo "::error::OSV-Scanner did not write results (outcome: ${OUTCOME}). This is a scanner error, e.g. osv.dev unreachable, not a vulnerability finding. See the \"Run OSV-Scanner\" step."
+            exit 1
+          fi
+          found=$(jq '[.results[].packages[].vulnerabilities[]?] | length' osv-results.json)
+          if [ "${OUTCOME}" = "failure" ] && [ "${found}" = "0" ]; then
+            echo "::error::OSV-Scanner exited with an error but reported no vulnerabilities. Treating this as a scanner error. See the \"Run OSV-Scanner\" step."
+            exit 1
+          fi
+
+      - name: Summarize findings
+        id: summary
+        run: |
+          jq -f .github/osv-scanner/findings.jq osv-results.json > osv-findings.json
+          total=$(jq 'length' osv-findings.json)
+          blocking=$(jq '[.[] | select(.blocking)] | length' osv-findings.json)
+          {
+            echo "## OSV-Scanner results"
+            echo
+            echo "Findings: **${total}**. Blocking (Critical, CVSS >= 9.0, with a fixed version): **${blocking}**."
+            echo
+            if [ "${total}" -gt 0 ]; then
+              echo "| Blocking | Severity | Score | Package | Version | Fixed in | Advisories | Lockfile |"
+              echo "| --- | --- | --- | --- | --- | --- | --- | --- |"
+              jq -r '.[] | "| \(if .blocking then "yes" else "" end) | \(.severity) | \(.score // "") | \(.package) | \(.version) | \(.fixed | join(", ")) | \(.ids | join(", ")) | \(.source) |"' osv-findings.json
+            fi
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+          echo "blocking=${blocking}" >> "${GITHUB_OUTPUT}"
+
+      - name: Fail on Critical findings with a fix
+        env:
+          BLOCKING: ${{ steps.summary.outputs.blocking }}
+        run: |
+          if [ "${BLOCKING}" -gt 0 ]; then
+            jq -r '.[] | select(.blocking) | "::error title=\(.package)@\(.version)::\(.severity) \(.ids | join(" / ")), fixed in \(.fixed | join(", ")) (\(.source))"' osv-findings.json
+            exit 1
+          fi
+          echo "No Critical findings with a fixed version available."
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: osv-scanner-results-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          # Kept longer than the other workflows' 7 days so the results stay
+          # available as evidence for review.
+          retention-days: 90
+          path: |
+            osv-results.json
+            osv-findings.json
+
+  nightly:
+    name: nightly (report-only)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Run OSV-Scanner
+        id: scan
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=./osv-scanner.toml
+            --format=sarif
+            --output-file=osv-results.sarif
+            --recursive
+            ./
+
+      - name: Check that the scan completed
+        env:
+          OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          if [ ! -s osv-results.sarif ]; then
+            echo "::error::OSV-Scanner did not write results (outcome: ${OUTCOME}). This is a scanner error, e.g. osv.dev unreachable, not a vulnerability finding."
+            exit 1
+          fi
+          {
+            echo "## OSV-Scanner nightly scan"
+            echo
+            echo "Findings: **$(jq '[.runs[].results[]?] | length' osv-results.sarif)**. Report-only; details are in the Security tab."
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload results to code scanning
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: osv-results.sarif
+          category: osv-scanner
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: osv-scanner-nightly-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: osv-results.sarif
