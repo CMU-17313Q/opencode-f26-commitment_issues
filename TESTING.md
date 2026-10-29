@@ -143,6 +143,28 @@ bun run test:e2e:local e2e/regression             # what runs nightly
 bun run test:e2e:local e2e/regression/my-new-test.spec.ts  # just your test
 ```
 
+## Dependency vulnerability scan (OSV-Scanner)
+
+[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) runs [OSV-Scanner](https://github.com/google/osv-scanner) against
+every `bun.lock` in the repo — the root one plus `sdks/vscode`, `github/`, `artifacts/glm52-rise-video` and
+`packages/console/resource`. It reads the lockfiles directly, so it doesn't install anything and finishes in about a minute.
+
+- **On PRs that change a `bun.lock`, a `package.json`, `osv-scanner.toml` or the workflow itself**, it fails only on
+  High/Critical findings (CVSS ≥ 7.0) that have a fixed version available. Everything else is listed in the job
+  summary, and the full results are attached to the run as the `osv-scanner-results-*` artifact.
+- **Nightly on `main`** (~5:30am ET), it re-scans everything and uploads the results to the repo's Security tab. This
+  run is report-only.
+
+If it flags something you can't fix yet, add a dated entry to [`osv-scanner.toml`](osv-scanner.toml) — the header
+there lists what each entry needs. Don't add an ignore without a `reason` and an `ignoreUntil` date.
+
+To run the same scan locally:
+
+```bash
+brew install osv-scanner
+osv-scanner scan source --recursive --config=./osv-scanner.toml ./
+```
+
 ## Quick reference
 
 ```bash
@@ -151,4 +173,5 @@ bun turbo test                               # only the packages wired into turb
 cd packages/<name> && bun test               # a specific package's tests, regardless of CI wiring
 cd packages/app && bun run test:e2e:local e2e/<smoke|user-story|regression>
 cd packages/opencode && bun run test:httpapi # HttpApi exerciser gates (nightly in CI)
+osv-scanner scan source --recursive --config=./osv-scanner.toml ./  # dependency vulnerability scan
 ```

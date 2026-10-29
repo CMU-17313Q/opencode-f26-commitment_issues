@@ -1,0 +1,14 @@
+# OSV-Scanner configuration. .github/workflows/osv-scanner.yml passes this file
+# with --config, so it applies to every bun.lock in the repo, not just the root one.
+#
+# Every ignore entry needs all three of:
+#   id           the OSV/GHSA/CVE id (its aliases are ignored too)
+#   reason       why it's acceptable, a link to the tracking issue, and the approver's name
+#   ignoreUntil  an expiry date at most 30 days out; the finding comes back after it
+#
+# Example:
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2026-11-28
+# reason = "Dev-only build tool, not shipped. No compatible fix yet. https://github.com/CMU-17313Q/opencode-f26-commitment_issues/issues/NN. Approved by <name>."
