@@ -1,0 +1,133 @@
+oasdiff negative test: simulated breaking changes against the real main spec
+oasdiff: oasdiff version 1.35.0   date: 2026-11-01T19:46:29Z
+base: GET /doc snapshot of main (a80bb93), 162 paths
+head: same spec with these jq edits applied (none of these would fail the k6 smoke test):
+  1. Session response field 'title' renamed to 'name'
+  2. POST /session/{sessionID}/command (used by /learn-* commands) gets a new required field 'learnMode'
+  3. DELETE /session/{sessionID}/share removed
+  4. New endpoint GET /learn/quiz added (safe, INFO only)
+
+================================================================================
+Run 1: as the PR check runs it (empty ignore file)
+$ oasdiff breaking main.json breaking.json --fail-on ERR --err-ignore .oasdiff-err-ignore.txt
+15 changes: 15 error, 0 warning, 0 info
+error	[response-required-property-removed] at breaking.json
+	in API GET /api/event
+		removed the required property `anyOf[#/components/schemas/SessionCreated]/data/info/title` from the response with the `200` status (shared schema: `Session`, also at `anyOf[#/components/schemas/SessionUpdated]/data/info/title`, `anyOf[#/components/schemas/SessionDeleted]/data/info/title`)
+
+error	[response-required-property-removed] at breaking.json
+	in API GET /event
+		removed the required property `anyOf[#/components/schemas/EventSessionCreated]/properties/info/title` from the response with the `200` status (shared schema: `Session`, also at `anyOf[#/components/schemas/EventSessionUpdated]/properties/info/title`, `anyOf[#/components/schemas/EventSessionDeleted]/properties/info/title`)
+
+error	[response-property-any-of-added] at breaking.json
+	in API GET /global/event
+		added `subschema #5, subschema #6, subschema #7` to the `payload` response property `anyOf` list for the response status `200`
+
+error	[response-required-property-removed] at breaking.json
+	in API GET /global/event
+		removed the required property `payload/anyOf[#/components/schemas/SyncEventSessionCreated]/syncEvent/data/info/title` from the response with the `200` status (shared schema: `Session`, also at `payload/anyOf[#/components/schemas/SyncEventSessionUpdated]/syncEvent/data/info/title`, `payload/anyOf[#/components/schemas/SyncEventSessionDeleted]/syncEvent/data/info/title`)
+
+error	[response-required-property-removed] at breaking.json
+	in API GET /session
+		removed the required property `items/title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API POST /session
+		removed the required property `title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API GET /session/{sessionID}
+		removed the required property `title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API PATCH /session/{sessionID}
+		removed the required property `title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API GET /session/{sessionID}/children
+		removed the required property `items/title` from the response with the `200` status
+
+error	[new-required-request-property] at breaking.json
+	in API POST /session/{sessionID}/command
+		added the new required request property `learnMode`
+
+error	[response-required-property-removed] at breaking.json
+	in API POST /session/{sessionID}/fork
+		removed the required property `title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API POST /session/{sessionID}/revert
+		removed the required property `title` from the response with the `200` status
+
+error	[api-removed-without-deprecation] at main.json
+	in API DELETE /session/{sessionID}/share
+		api removed without deprecation
+
+error	[response-required-property-removed] at breaking.json
+	in API POST /session/{sessionID}/share
+		removed the required property `title` from the response with the `200` status
+
+error	[response-required-property-removed] at breaking.json
+	in API POST /session/{sessionID}/unrevert
+		removed the required property `title` from the response with the `200` status
+
+
+exit code: 1   (1 = check fails, merge blocked)
+
+================================================================================
+Run 2: single-line format, used to copy an entry into .oasdiff-err-ignore.txt (filtered to the share endpoint)
+$ oasdiff breaking main.json breaking.json --format singleline | grep 'DELETE /session/{sessionID}/share'
+error at main.json, in API DELETE /session/{sessionID}/share api removed without deprecation [api-removed-without-deprecation]. 
+
+Note: the entry must use oasdiff's exact description text. A first attempt that wrote
+'api path removed without deprecation' (paraphrased) did not match and the check kept failing.
+
+================================================================================
+Run 3: author accepts the share removal as intentional; this line is appended to the ignore file:
+  DELETE /session/{sessionID}/share api removed without deprecation | reason: sharing is disabled on our VM | issue: #<n> | approved-by: <reviewer>
+$ oasdiff breaking main.json breaking.json --fail-on ERR --err-ignore <ignore file with the entry>
+14 changes: 14 error, 0 warning, 0 info
+error at breaking.json, in API GET /api/event removed the required property `anyOf[#/components/schemas/SessionCreated]/data/info/title` from the response with the `200` status (shared schema: `Session`, also at `anyOf[#/components/schemas/SessionUpdated]/data/info/title`, `anyOf[#/components/schemas/SessionDeleted]/data/info/title`) [response-required-property-removed]. 
+
+error at breaking.json, in API GET /event removed the required property `anyOf[#/components/schemas/EventSessionCreated]/properties/info/title` from the response with the `200` status (shared schema: `Session`, also at `anyOf[#/components/schemas/EventSessionUpdated]/properties/info/title`, `anyOf[#/components/schemas/EventSessionDeleted]/properties/info/title`) [response-required-property-removed]. 
+
+error at breaking.json, in API GET /global/event added `subschema #5, subschema #6, subschema #7` to the `payload` response property `anyOf` list for the response status `200` [response-property-any-of-added]. 
+
+error at breaking.json, in API GET /global/event removed the required property `payload/anyOf[#/components/schemas/SyncEventSessionCreated]/syncEvent/data/info/title` from the response with the `200` status (shared schema: `Session`, also at `payload/anyOf[#/components/schemas/SyncEventSessionUpdated]/syncEvent/data/info/title`, `payload/anyOf[#/components/schemas/SyncEventSessionDeleted]/syncEvent/data/info/title`) [response-required-property-removed]. 
+
+error at breaking.json, in API GET /session removed the required property `items/title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API POST /session removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API GET /session/{sessionID} removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API PATCH /session/{sessionID} removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API GET /session/{sessionID}/children removed the required property `items/title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API POST /session/{sessionID}/command added the new required request property `learnMode` [new-required-request-property]. 
+
+error at breaking.json, in API POST /session/{sessionID}/fork removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API POST /session/{sessionID}/revert removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API POST /session/{sessionID}/share removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+error at breaking.json, in API POST /session/{sessionID}/unrevert removed the required property `title` from the response with the `200` status [response-required-property-removed]. 
+
+
+exit code: 1   (still 1: the share removal is gone from the report, but the rename and new required field were not accepted)
+
+================================================================================
+Run 4: only the safe change (new endpoint), as a PR adding a route would look
+$ oasdiff breaking main.json additive.json --fail-on ERR --err-ignore .oasdiff-err-ignore.txt
+No breaking changes to report, but the specs are different.
+Run 'oasdiff diff' to see structural differences.
+exit code: 0   (0 = check passes)
+$ oasdiff changelog main.json additive.json
+1 changes: 0 error, 0 warning, 1 info
+info	[endpoint-added] at additive.json
+	in API GET /learn/quiz
+		endpoint added
+
+
