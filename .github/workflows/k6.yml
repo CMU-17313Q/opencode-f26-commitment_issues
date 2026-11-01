@@ -1,0 +1,65 @@
+name: k6 Smoke Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/opencode/src/server/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "k6/**"
+      - ".github/workflows/k6.yml"
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  k6-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start OpenCode container
+        run: docker compose up -d --build
+
+      - name: Wait for server to be healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf --max-time 5 http://127.0.0.1:4096/global/health > /dev/null; then
+              echo "Server is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become healthy"
+          docker compose logs
+          exit 1
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 test
+        # Nightly and manual runs are report-only, PR and push runs block
+        continue-on-error: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        env:
+          # Nightly and manual runs: more users, longer, and include /provider
+          VUS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '20' || '5' }}
+          DURATION: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '2m' || '30s' }}
+          INCLUDE_PROVIDER: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        run: k6 run --summary-export=k6-summary.json k6/smoke.js
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary
+          path: k6-summary.json
+
+      - name: Stop container
+        if: always()
+        run: docker compose down
