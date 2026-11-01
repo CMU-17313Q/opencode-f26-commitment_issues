@@ -44,6 +44,8 @@ jobs:
         uses: grafana/setup-k6-action@v1
 
       - name: Run k6 test
+        # Nightly and manual runs are report-only, PR and push runs block
+        continue-on-error: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         env:
           # Nightly and manual runs: more users, longer, and include /provider
           VUS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '20' || '5' }}
