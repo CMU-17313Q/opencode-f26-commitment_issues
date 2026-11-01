@@ -1,0 +1,142 @@
+name: oasdiff API Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/opencode/src/**"
+      - "packages/sdk/**"
+      # The server's route schemas come from these workspace packages, and its OpenAPI generator from bun.lock.
+      - "packages/core/**"
+      - "packages/server/**"
+      - "packages/schema/**"
+      - "packages/protocol/**"
+      - "packages/llm/**"
+      - "bun.lock"
+      # The snapshot script mirrors the Dockerfile's CMD, so re-check when the deploy command changes.
+      - "Dockerfile"
+      - "script/openapi-snapshot.sh"
+      - ".oasdiff-err-ignore.txt"
+      - ".github/workflows/oasdiff.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/opencode/src/**"
+      - "packages/sdk/**"
+      # The server's route schemas come from these workspace packages, and its OpenAPI generator from bun.lock.
+      - "packages/core/**"
+      - "packages/server/**"
+      - "packages/schema/**"
+      - "packages/protocol/**"
+      - "packages/llm/**"
+      - "bun.lock"
+      # The snapshot script mirrors the Dockerfile's CMD, so re-check when the deploy command changes.
+      - "Dockerfile"
+      - "script/openapi-snapshot.sh"
+      - ".github/workflows/oasdiff.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  oasdiff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # On a PR, HEAD is GitHub's merge commit and HEAD^1 is the exact base it was merged onto, so the
+      # diff covers only this PR's changes. On push, compare against the commit main pointed to before.
+      - name: Check out base into a worktree
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          base="${BEFORE:-$(git rev-parse HEAD^1)}"
+          echo "Comparing base ${base} -> head $(git rev-parse HEAD)"
+          git worktree add --detach "${RUNNER_TEMP}/base" "${base}"
+          mkdir -p oasdiff
+
+      # Same install as the base gets from the snapshot script: /doc needs no native addons.
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+        with:
+          install-flags: --frozen-lockfile --ignore-scripts
+
+      # Both snapshots use this branch's script, since the base may predate it. The script runs
+      # `bun install` in the base worktree, which reuses the Bun cache restored above.
+      - name: Snapshot head spec
+        run: ./script/openapi-snapshot.sh . oasdiff/head.json
+
+      - name: Snapshot base spec
+        run: ./script/openapi-snapshot.sh "${RUNNER_TEMP}/base" oasdiff/base.json
+
+      # review: false keeps our spec inside CI; otherwise the action uploads both specs to oasdiff.com.
+      - name: Check for breaking changes
+        if: github.event_name == 'pull_request'
+        uses: oasdiff/oasdiff-action/breaking@9e56cf8b3aff7edb326d5767d3d23f96127e20c3 # v0.1.21 (oasdiff v1.35.0)
+        with:
+          base: oasdiff/base.json
+          revision: oasdiff/head.json
+          fail-on: ERR
+          err-ignore: .oasdiff-err-ignore.txt
+          output-to-file: oasdiff/breaking.txt
+          review: false
+          github-token: ""
+
+      - name: Generate changelog
+        if: github.event_name != 'pull_request'
+        uses: oasdiff/oasdiff-action/changelog@9e56cf8b3aff7edb326d5767d3d23f96127e20c3 # v0.1.21 (oasdiff v1.35.0)
+        with:
+          base: oasdiff/base.json
+          revision: oasdiff/head.json
+          output-to-file: oasdiff/changelog.txt
+          review: false
+          github-token: ""
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            if [ -f oasdiff/breaking.txt ]; then
+              echo "## oasdiff breaking changes"
+              echo
+              echo "ERR-level changes block the merge; WARN-level changes are shown as annotations only."
+              echo "To accept an intentional ERR-level change, add it to \`.oasdiff-err-ignore.txt\`."
+              echo
+              echo '```'
+              cat oasdiff/breaking.txt
+              echo '```'
+            fi
+            if [ -f oasdiff/changelog.txt ]; then
+              echo "## oasdiff API changelog (report-only)"
+              echo
+              echo '```'
+              if [ -s oasdiff/changelog.txt ]; then cat oasdiff/changelog.txt; else echo "No API changes"; fi
+              echo '```'
+            fi
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload specs and report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: oasdiff-${{ github.event_name }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          # Kept for 90 days so the push-to-main changelog stays available as a record of each deploy.
+          retention-days: 90
+          path: oasdiff/

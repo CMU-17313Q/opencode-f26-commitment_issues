@@ -1,0 +1,18 @@
+Accepted breaking (ERR-level) API changes for the oasdiff check (.github/workflows/oasdiff.yml).
+
+oasdiff ignores an ERR-level change when a line below contains both its METHOD and path (or the
+word "components" for a schema change) and its description, in any case. Copy the line from the
+failed job's output (or `oasdiff breaking --format singleline base.json head.json`) and append:
+
+  | reason: <why clients can live with it> | issue: <link> | approved-by: <second team member>
+
+Keep oasdiff's exact description text: a paraphrased line (e.g. "api path removed" instead of
+"api removed") silently fails to match and the check keeps failing.
+
+The PR author adds the line; a second team member approves it in review. Review this file every
+release and delete entries whose change has fully rolled out.
+
+Keep prose in this header free of METHOD-plus-path text so it can never match a real change.
+
+Accepted changes:
+
