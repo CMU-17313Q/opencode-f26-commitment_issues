@@ -1,0 +1,78 @@
+name: codeql-quality
+
+# Code Quality / Static Analysis check: CodeQL's JavaScript/TypeScript code-quality queries
+# (no security queries) on packages/app, packages/opencode and packages/tui. Fails on findings
+# that are not in .github/codeql/known-findings.tsv. Config: .github/codeql/codeql-config.yml.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/app/src/**"
+      - "packages/opencode/src/**"
+      - "packages/tui/src/**"
+      - ".github/codeql/**"
+      - ".github/workflows/codeql-quality.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  analyze:
+    name: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Only used on pushes to main, to publish results to the Security tab.
+      security-events: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Test the baseline gate
+        run: bash .github/codeql/test-check-findings.sh
+
+      # build-mode none: CodeQL reads the TypeScript sources directly, no bun install needed.
+      # The bundle is pinned so CI runs the same queries as the local evidence run.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+          tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.3/codeql-bundle-linux64.tar.gz
+
+      - name: Run CodeQL code-quality queries
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          category: code-quality
+          output: codeql-results
+          upload: ${{ github.event_name == 'push' && 'always' || 'never' }}
+
+      - name: Fail on new findings
+        run: bash .github/codeql/check-findings.sh codeql-results/*.sarif
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codeql-quality-results-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          # Same as osv-scanner: kept 90 days so the results stay available as evidence.
+          retention-days: 90
+          path: codeql-results/

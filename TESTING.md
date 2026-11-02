@@ -166,6 +166,30 @@ brew install osv-scanner
 osv-scanner scan source --recursive --config=./osv-scanner.toml ./
 ```
 
+## Code quality (CodeQL)
+
+[`codeql-quality.yml`](.github/workflows/codeql-quality.yml) runs [CodeQL](https://codeql.github.com/)'s
+JavaScript/TypeScript **code-quality** query suite (98 queries, no security queries) on `packages/app/src`,
+`packages/opencode/src` and `packages/tui/src`, where all Learning Companion code lives. CodeQL reads the source
+without running or building it, and flags bugs such as unused variables and imports, values assigned and never
+read, conditions that are always true or false, unreachable code and missing `await`s. The config is
+[`.github/codeql/codeql-config.yml`](.github/codeql/codeql-config.yml).
+
+- **On PRs that touch those three `src` folders or the check's own files**, it fails only on **new** findings:
+  findings already in the codebase when the check was added (102, all in upstream opencode code) are listed in
+  [`.github/codeql/known-findings.tsv`](.github/codeql/known-findings.tsv). New findings show up as annotations on
+  the PR diff and in the job summary. The SARIF output is attached to the run as the `codeql-quality-results-*`
+  artifact.
+- **On every push to `main`**, it also publishes the results to the repo's Security tab (category `code-quality`).
+
+If you fix a baselined finding or must accept a new one, regenerate the baseline from the run's SARIF and say why in
+the PR. If you change `check-findings.sh`, run its tests:
+
+```bash
+BASELINE=write bash .github/codeql/check-findings.sh path/to/javascript.sarif
+bash .github/codeql/test-check-findings.sh
+```
+
 ## Quick reference
 
 ```bash
