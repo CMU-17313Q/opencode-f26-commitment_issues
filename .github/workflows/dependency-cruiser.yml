@@ -19,7 +19,7 @@ on:
       - ".github/dependency-cruiser/**"
       - ".github/workflows/dependency-cruiser.yml"
   push:
-    branches: [main]
+    branches: [main, mshikfa/dependency-cruiser-check]
   workflow_dispatch:
 
 concurrency:
