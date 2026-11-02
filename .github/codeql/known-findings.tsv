@@ -1,0 +1,104 @@
+# CodeQL code-quality findings that already existed when the check was added (upstream opencode code).
+# Only findings NOT listed here fail CI. Regenerate: BASELINE=write bash .github/codeql/check-findings.sh <sarif>
+js/comparison-between-incompatible-types|packages/app/src/pages/error.tsx|fadfe562fc7792c3:1	packages/app/src/pages/error.tsx:33	Variable 'error' is of type date, object or regular expression, but it is compared to [an expression](1) of type null.
+js/property-access-on-non-object|packages/app/src/components/terminal.tsx|d757f0867032116c:1	packages/app/src/components/terminal.tsx:467	The base expression of this property access is always undefined.
+js/property-access-on-non-object|packages/app/src/components/terminal.tsx|fc1a86e6b2956512:1	packages/app/src/components/terminal.tsx:366	The base expression of this property access is always undefined.
+js/property-access-on-non-object|packages/app/src/pages/session/composer/session-todo-dock.tsx|83d3179e1554dac6:1	packages/app/src/pages/session/composer/session-todo-dock.tsx:90	The base expression of this property access is always undefined.
+js/trivial-conditional|packages/app/src/components/dialog-select-directory-v2.tsx|dacbf7f165b7e549:1	packages/app/src/components/dialog-select-directory-v2.tsx:273	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/components/dialog-select-model-unpaid-v2.tsx|926ea8c23c034991:1	packages/app/src/components/dialog-select-model-unpaid-v2.tsx:55	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/components/server/server-row.tsx|3ba791cff75d70c4:1	packages/app/src/components/server/server-row.tsx:37	This use of variable 'versionRef' always evaluates to false.
+js/trivial-conditional|packages/app/src/components/server/server-row.tsx|8d73e964dbe54b88:1	packages/app/src/components/server/server-row.tsx:36	This use of variable 'nameRef' always evaluates to false.
+js/trivial-conditional|packages/app/src/components/session/session-sortable-terminal-tab.tsx|7da8764767f147d2:1	packages/app/src/components/session/session-sortable-terminal-tab.tsx:100	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/components/session/session-sortable-terminal-tab-v2.tsx|7da8764767f147d2:1	packages/app/src/components/session/session-sortable-terminal-tab-v2.tsx:117	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/components/titlebar-tab-strip.tsx|9d0c152a9a4a1153:1	packages/app/src/components/titlebar-tab-strip.tsx:258	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/pages/session/composer/todo-panel-motion.stories.tsx|99197eed0042784b:1	packages/app/src/pages/session/composer/todo-panel-motion.stories.tsx:219	This negation always evaluates to true.
+js/trivial-conditional|packages/app/src/pages/session/terminal-panel-v2.tsx|8fdac63536af4dcd:1	packages/app/src/pages/session/terminal-panel-v2.tsx:244	This use of variable 'tabList' always evaluates to false.
+js/trivial-conditional|packages/opencode/src/session/revert.ts|8288b58090831055:1	packages/opencode/src/session/revert.ts:55	This negation always evaluates to true.
+js/trivial-conditional|packages/opencode/src/storage/storage.ts|dfd98a04abbb2457:1	packages/opencode/src/storage/storage.ts:107	This negation always evaluates to false.
+js/unneeded-defensive-code|packages/app/src/pages/session.tsx|2f46aa49c2cb403c:1	packages/app/src/pages/session.tsx:2010	This guard always evaluates to false.
+js/unneeded-defensive-code|packages/app/src/pages/session.tsx|d9063c7b32240d7c:1	packages/app/src/pages/session.tsx:2009	This guard always evaluates to false.
+js/unused-local-variable|packages/app/src/app.tsx|5afb65c2bbf5e0c:1	packages/app/src/app.tsx:245	Unused function LayoutCompatibility.
+js/unused-local-variable|packages/app/src/app.tsx|8d19a67db2e15ad4:1	packages/app/src/app.tsx:40	Unused import makeEventListener.
+js/unused-local-variable|packages/app/src/app.tsx|9f5e429b80d1c561:1	packages/app/src/app.tsx:11	Unused import useLocation.
+js/unused-local-variable|packages/app/src/components/help-button.tsx|f4f194424d17445c:1	packages/app/src/components/help-button.tsx:14	Unused variable showPopover.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|43e7677f78cd7ef0:1	packages/app/src/components/prompt-input.tsx:48	Unused import DialogSelectModelUnpaidV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|45df5a007b7d35f:1	packages/app/src/components/prompt-input.tsx:39	Unused import IconButtonV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|47d1fbcf42a3ad42:1	packages/app/src/components/prompt-input.tsx:41	Unused import MenuV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|52bef5bc9553992e:1	packages/app/src/components/prompt-input.tsx:3	Unused imports Match, Switch.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|545d3408e777cc56:1	packages/app/src/components/prompt-input.tsx:46	Unused import ModelSelectorPopoverV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|57e3b5cf8f3d0c50:1	packages/app/src/components/prompt-input.tsx:40	Unused import KeybindV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|5e9cbbb62384e606:1	packages/app/src/components/prompt-input.tsx:37	Unused import ButtonV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|62424201d21b9c9c:1	packages/app/src/components/prompt-input.tsx:1177	Unused variable fileAttachmentInput.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|6757b59d0916eb32:1	packages/app/src/components/prompt-input.tsx:42	Unused import TooltipV2.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|8c3a61097d63b61:1	packages/app/src/components/prompt-input.tsx:17	Unused import isCommentItem.
+js/unused-local-variable|packages/app/src/components/prompt-input.tsx|b7c1f3aa064724a0:1	packages/app/src/components/prompt-input.tsx:38	Unused import IconV2.
+js/unused-local-variable|packages/app/src/components/session/session-header.tsx|969cffabf3b99949:1	packages/app/src/components/session/session-header.tsx:530	Unused variable language.
+js/unused-local-variable|packages/app/src/components/status-popover-body.tsx|5291234f18e95677:1	packages/app/src/components/status-popover-body.tsx:263	Unused variable fail.
+js/unused-local-variable|packages/app/src/context/directory-sync.ts|c20007de4eb38ce:1	packages/app/src/context/directory-sync.ts:29	Unused variable client.
+js/unused-local-variable|packages/app/src/context/global-sync/bootstrap.ts|d9dd5b22afb70f09:1	packages/app/src/context/global-sync/bootstrap.ts:92	Unused function showErrors.
+js/unused-local-variable|packages/app/src/context/server-sync.tsx|972ca8ad61885d32:1	packages/app/src/context/server-sync.tsx:12	Unused import produce.
+js/unused-local-variable|packages/app/src/context/server-sync.tsx|f7a6af3dc0e40d10:1	packages/app/src/context/server-sync.tsx:46	Unused import retry.
+js/unused-local-variable|packages/app/src/context/server.tsx|f28b64a4fb206caa:1	packages/app/src/context/server.tsx:15	Unused variable HEALTH_POLL_INTERVAL_MS.
+js/unused-local-variable|packages/app/src/context/sync.tsx|6932ebfa44ab0b13:1	packages/app/src/context/sync.tsx:8	Unused variable SKIP_PARTS.
+js/unused-local-variable|packages/app/src/hooks/use-providers.ts|4f8e18c155ce4906:1	packages/app/src/hooks/use-providers.ts:5	Unused imports createEffect, createMemo.
+js/unused-local-variable|packages/app/src/pages/layout/sidebar-items.tsx|865c1dd31a775f69:1	packages/app/src/pages/layout/sidebar-items.tsx:3	Unused import Icon.
+js/unused-local-variable|packages/app/src/pages/layout.tsx|5467b552548a2cc7:1	packages/app/src/pages/layout.tsx:32	Unused import reconcile.
+js/unused-local-variable|packages/app/src/pages/layout.tsx|ca6c0f1fd013b2aa:1	packages/app/src/pages/layout.tsx:44	Unused import retry.
+js/unused-local-variable|packages/app/src/pages/session/composer/session-composer-state.ts|f02ca6445f83404e:1	packages/app/src/pages/session/composer/session-composer-state.ts:26	Unused variable idle.
+js/unused-local-variable|packages/app/src/pages/session/terminal-panel-v2.tsx|9eb4c96175bfd958:1	packages/app/src/pages/session/terminal-panel-v2.tsx:141	Unused variable ids.
+js/unused-local-variable|packages/app/src/pages/session.tsx|28f9aaf3af3d3f92:1	packages/app/src/pages/session.tsx:369	Unused variable terminal.
+js/unused-local-variable|packages/app/src/pages/session.tsx|61f6cce939f48812:1	packages/app/src/pages/session.tsx:552	Unused variable messages.
+js/unused-local-variable|packages/app/src/pages/session.tsx|8fae056a2ab95c48:1	packages/app/src/pages/session.tsx:1695	Unused variable merge.
+js/unused-local-variable|packages/app/src/pages/session/use-session-commands.tsx|3b77e77e3e2817ba:1	packages/app/src/pages/session/use-session-commands.tsx:19	Unused imports Message, Part.
+js/unused-local-variable|packages/app/src/pages/session/use-session-commands.tsx|ee3783e41b2dce12:1	packages/app/src/pages/session/use-session-commands.tsx:16	Unused import findLast.
+js/unused-local-variable|packages/opencode/src/account/account.ts|5f2114662f4adf95:1	packages/opencode/src/account/account.ts:5	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/acp/directory.ts|f234b7564574ff51:1	packages/opencode/src/acp/directory.ts:4	Unused import InstanceBootstrap.
+js/unused-local-variable|packages/opencode/src/acp/usage.ts|f234b7564574ff51:1	packages/opencode/src/acp/usage.ts:4	Unused import InstanceBootstrap.
+js/unused-local-variable|packages/opencode/src/cli/cmd/export.ts|1d76515827c31e54:1	packages/opencode/src/cli/cmd/export.ts:3	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/cli/cmd/import.ts|120061816ca54e01:1	packages/opencode/src/cli/cmd/import.ts:4	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/config/config.ts|26ec7319abdea2c1:1	packages/opencode/src/config/config.ts:22	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/config/config.ts|6b49e07c9cd44a4:1	packages/opencode/src/config/config.ts:23	Unused import EffectFlock.
+js/unused-local-variable|packages/opencode/src/control-plane/workspace.ts|63054ec270aa6e7b:1	packages/opencode/src/control-plane/workspace.ts:665	Unused variable total.
+js/unused-local-variable|packages/opencode/src/control-plane/workspace.ts|742230ccc180cf35:1	packages/opencode/src/control-plane/workspace.ts:5	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/lsp/client.ts|2dcb021d003960ab:1	packages/opencode/src/lsp/client.ts:7	Unused import Effect.
+js/unused-local-variable|packages/opencode/src/lsp/client.ts|81dbbccd7430b59f:1	packages/opencode/src/lsp/client.ts:130	Unused variable instance.
+js/unused-local-variable|packages/opencode/src/lsp/server.ts|8ffe9240f8e1643f:1	packages/opencode/src/lsp/server.ts:536	Unused variable elixirLsPath.
+js/unused-local-variable|packages/opencode/src/mcp/index.ts|f04924499f7d07be:1	packages/opencode/src/mcp/index.ts:23	Unused import FSUtil.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/groups/config.ts|1bbdd76860fc1d75:1	packages/opencode/src/server/routes/instance/httpapi/groups/config.ts:1	Unused import Config.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/groups/file.ts|2be5aa07d89ec401:1	packages/opencode/src/server/routes/instance/httpapi/groups/file.ts:1	Unused import FileSystem.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/groups/permission.ts|dc22bff8f3714e5:1	packages/opencode/src/server/routes/instance/httpapi/groups/permission.ts:2	Unused import Permission.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/groups/session.ts|6ef6fd66c3e325a:1	packages/opencode/src/server/routes/instance/httpapi/groups/session.ts:6	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/groups/session.ts|ee3ca26f1327f752:1	packages/opencode/src/server/routes/instance/httpapi/groups/session.ts:2	Unused import Permission.
+js/unused-local-variable|packages/opencode/src/server/routes/instance/httpapi/handlers/file.ts|69f77aff54ee2baa:1	packages/opencode/src/server/routes/instance/httpapi/handlers/file.ts:67	Unused variable directory.
+js/unused-local-variable|packages/opencode/src/session/instruction.ts|88f8bd29ca66db8:1	packages/opencode/src/session/instruction.ts:6	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/session/message.ts|e418dc7272b7165c:1	packages/opencode/src/session/message.ts:6	Unused imports AuthError, OutputLengthError.
+js/unused-local-variable|packages/opencode/src/session/reminders.ts|f3f9ba1fbd291f8a:1	packages/opencode/src/session/reminders.ts:9	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/session/retry.ts|86a4d3bbd0a879fb:1	packages/opencode/src/session/retry.ts:4	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/session/revert.ts|92532b1b1f73cfbf:1	packages/opencode/src/session/revert.ts:8	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/session/session.ts|12bd338a64d48d6e:1	packages/opencode/src/session/session.ts:14	Unused import SessionExecutionLocal.
+js/unused-local-variable|packages/opencode/src/session/session.ts|9b39096e4cc9f86d:1	packages/opencode/src/session/session.ts:13	Unused import SessionV2.
+js/unused-local-variable|packages/opencode/src/session/session.ts|9ef7cd6686bef91d:1	packages/opencode/src/session/session.ts:15	Unused import locationServiceMapLayer.
+js/unused-local-variable|packages/opencode/src/session/tools.ts|11919f575cf30b6d:1	packages/opencode/src/session/tools.ts:22	Unused import ProviderV2.
+js/unused-local-variable|packages/opencode/src/session/tools.ts|7b03d6672e2208ab:1	packages/opencode/src/session/tools.ts:17	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/share/share-next.ts|2217742988be241a:1	packages/opencode/src/share/share-next.ts:6	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/share/share-next.ts|cc90a541f42cf3e:1	packages/opencode/src/share/share-next.ts:5	Unused import Stream.
+js/unused-local-variable|packages/opencode/src/skill/discovery.ts|2217742988be241a:1	packages/opencode/src/skill/discovery.ts:5	Unused import FetchHttpClient.
+js/unused-local-variable|packages/opencode/src/skill/discovery.ts|66d56c09a0c3259d:1	packages/opencode/src/skill/discovery.ts:3	Unused import NodePath.
+js/unused-local-variable|packages/opencode/src/temporary.ts|35df15bcec41a0b8:1	packages/opencode/src/temporary.ts:5	Unused variable cli.
+js/unused-local-variable|packages/opencode/src/tool/plan.ts|62ae472d2aae06d1:1	packages/opencode/src/tool/plan.ts:7	Unused import MessageV2.
+js/unused-local-variable|packages/opencode/src/tool/registry.ts|4240438b59c7cf11:1	packages/opencode/src/tool/registry.ts:37	Unused import ChildProcessSpawner.
+js/unused-local-variable|packages/opencode/src/tool/truncate.ts|1f3e5e2e0b6975e:1	packages/opencode/src/tool/truncate.ts:2	Unused import NodePath.
+js/unused-local-variable|packages/tui/src/component/prompt/index.tsx|c36a34ad956fdfd1:1	packages/tui/src/component/prompt/index.tsx:1355	Unused variable moveLabelWidth.
+js/unused-local-variable|packages/tui/src/context/theme.tsx|9cf260c20c56a4cc:1	packages/tui/src/context/theme.tsx:3	Unused imports DEFAULT_THEMES, addTheme, selectedForeground, tint, upsertTheme.
+js/unused-local-variable|packages/tui/src/feature-plugins/system/diff-viewer.tsx|2da00ed3eadddc28:1	packages/tui/src/feature-plugins/system/diff-viewer.tsx:166	Unused variable toggleViewShortcut.
+js/unused-local-variable|packages/tui/src/feature-plugins/system/diff-viewer.tsx|84cb21885ba80d27:1	packages/tui/src/feature-plugins/system/diff-viewer.tsx:163	Unused variable toggleFileTreeShortcut.
+js/unused-local-variable|packages/tui/src/feature-plugins/system/diff-viewer.tsx|bf82d85dfc661c64:1	packages/tui/src/feature-plugins/system/diff-viewer.tsx:317	Unused variable highlightedPatchFileIndex.
+js/unused-local-variable|packages/tui/src/feature-plugins/system/diff-viewer.tsx|f07800736c380bc4:1	packages/tui/src/feature-plugins/system/diff-viewer.tsx:164	Unused variable singlePatchShortcut.
+js/unused-local-variable|packages/tui/src/feature-plugins/system/which-key.tsx|88cc83d2a0e128b4:1	packages/tui/src/feature-plugins/system/which-key.tsx:41	Unused variable MIN_COLUMN_WIDTH.
+js/use-before-declaration|packages/opencode/src/effect/runtime-flags.ts|11677f454d55ca35:1	packages/opencode/src/effect/runtime-flags.ts:75	Variable 'LayerNode' is used before its [declaration](1).
+js/useless-assignment-to-local|packages/app/src/components/prompt-input/submit.ts|7b7e86bb9823ce54:1	packages/app/src/components/prompt-input/submit.ts:391	The value assigned to client here is unused.
+js/useless-assignment-to-local|packages/opencode/src/tool/apply_patch.ts|3cc7086a0ff3fa4c:1	packages/opencode/src/tool/apply_patch.ts:118	The initial value of bom is unused, since it is always overwritten.
+js/useless-assignment-to-local|packages/opencode/src/tool/apply_patch.ts|eefb7f4b67529c7:1	packages/opencode/src/tool/apply_patch.ts:117	The initial value of newContent is unused, since it is always overwritten.
+js/useless-assignment-to-local|packages/opencode/src/tool/webfetch.ts|e3fe3b1b9cc75a39:1	packages/opencode/src/tool/webfetch.ts:53	The initial value of acceptHeader is unused, since it is always overwritten.
+js/useless-expression|packages/app/src/components/status-popover-body.tsx|627d2fc59b24d5ee:1	packages/app/src/components/status-popover-body.tsx:64	This expression has no effect.
+js/useless-expression|packages/app/src/components/titlebar-tab-nav.tsx|14a2fe16df38b3f2:1	packages/app/src/components/titlebar-tab-nav.tsx:99	This expression has no effect.

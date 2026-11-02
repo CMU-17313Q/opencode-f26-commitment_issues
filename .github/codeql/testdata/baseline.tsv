@@ -1,0 +1,3 @@
+# test baseline: one entry still present, one fixed since
+js/comparison-between-incompatible-types|packages/app/src/pages/error.tsx|fadfe562fc7792c3:1	packages/app/src/pages/error.tsx:33	Variable 'error' is of type date, object or regular expression, but it is compared to [an expression](1) of type null.
+js/unused-local-variable|packages/app/src/old.ts|0000000000000000:1	packages/app/src/old.ts:1	Unused variable gone.

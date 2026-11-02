@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodeQL",
+          "semanticVersion": "2.27.3",
+          "rules": [
+            {
+              "id": "js/unused-local-variable"
+            },
+            {
+              "id": "js/useless-assignment-to-local"
+            },
+            {
+              "id": "js/comparison-between-incompatible-types"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "js/comparison-between-incompatible-types",
+          "message": {
+            "text": "Variable 'error' is of type date, object or regular expression, but it is compared to [an expression](1) of type null."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "packages/app/src/pages/error.tsx"
+                },
+                "region": {
+                  "startLine": 33
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "fadfe562fc7792c3:1"
+          }
+        }
+      ]
+    }
+  ]
+}

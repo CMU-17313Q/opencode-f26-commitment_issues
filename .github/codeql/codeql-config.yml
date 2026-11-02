@@ -1,0 +1,14 @@
+# CodeQL config for the Code Quality / Static Analysis check (.github/workflows/codeql-quality.yml).
+# Runs only CodeQL's JavaScript/TypeScript code-quality suite (98 queries: unused variables and imports,
+# dead stores, unreachable code, conditions that are always true, missing await, ...). No security queries.
+# Query list: https://github.com/github/codeql/blob/main/javascript/ql/src/codeql-suites/javascript-code-quality.qls
+name: code-quality
+disable-default-queries: true
+packs:
+  javascript:
+    - codeql/javascript-queries:codeql-suites/javascript-code-quality.qls
+# All Learning Companion code lives in these three packages.
+paths:
+  - packages/app/src
+  - packages/opencode/src
+  - packages/tui/src

@@ -1,0 +1,17 @@
+# Negative check, 2026-11-02T15:19:13Z: added packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts on purpose, analyzed, then deleted it:
+#   const unusedTotal = answers.length      // never used
+#   let score = 0; score = 1; score = ...   // first assignments are dead
+# Expected: exit code 1 with exactly those findings. The 102 baselined findings stay quiet.
+$ bash .github/codeql/check-findings.sh neg.sarif
+## CodeQL code quality
+
+Queries run: **98**. Findings: **104**. New (not in the baseline): **2**. Baseline entries no longer found: **0**.
+
+| Rule | Location | Message |
+| --- | --- | --- |
+| js/unused-local-variable | packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts:3 | Unused variable unusedTotal. |
+| js/useless-assignment-to-local | packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts:5 | The value assigned to score here is unused. |
+::notice title=CodeQL code quality::Queries run: 98. Findings: 104. New: 2. Baseline entries no longer found: 0.
+::error file=packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts,line=3,title=js/unused-local-variable::Unused variable unusedTotal.
+::error file=packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts,line=5,title=js/useless-assignment-to-local::The value assigned to score here is unused.
+exit code: 1
