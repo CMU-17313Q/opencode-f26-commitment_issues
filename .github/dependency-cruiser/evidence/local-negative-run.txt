@@ -1,0 +1,37 @@
+# Negative check: violations added on purpose to packages/app/src/pages/ai-xam (deleted afterwards):
+#   tmp-x.ts <-> tmp-y.ts import each other (runtime cycle)
+#   domain/tmp-leak.ts imports ../components/mock-exam-flow (UI import from the pure domain layer)
+# Expected: exit code 1, naming only these. Pre-existing violations stay ignored.
+$ bash .github/dependency-cruiser/run.sh   # 2026-11-02T09:13:43Z
+::group::dependency-cruiser packages/app
+
+  error no-circular: src/pages/ai-xam/tmp-y.ts → src/pages/ai-xam/tmp-x.ts
+    Import cycles make module init order fragile (undefined at import time) and
+    tie modules together so they can't be tested or changed alone. Break the
+    cycle by moving the shared part into its own module.
+
+  error no-circular: src/pages/ai-xam/tmp-x.ts → src/pages/ai-xam/tmp-y.ts
+    Import cycles make module init order fragile (undefined at import time) and
+    tie modules together so they can't be tested or changed alone. Break the
+    cycle by moving the shared part into its own module.
+
+  error ai-xam-domain-is-pure: src/pages/ai-xam/domain/tmp-leak.ts → src/pages/ai-xam/components/mock-exam-flow.tsx
+    ai-xam/domain holds pure exam logic. It must not import components,
+    services, the AI client or Solid.
+
+
+x 3 dependency violations (3 errors, 0 warnings). 713 modules, 2594 dependencies cruised.
+‼ 18 known violations ignored. Run with --no-ignore-known to see them.
+‼ 7 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.
+
+::endgroup::
+packages/app: 713 modules, 2594 dependencies, 2 new error violations (a cycle counts once), 0 warnings
+::group::dependency-cruiser packages/opencode
+
+✔ no dependency violations found (563 modules, 2565 dependencies cruised)
+‼ 20 known violations ignored. Run with --no-ignore-known to see them.
+‼ 17 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.
+
+::endgroup::
+packages/opencode: 563 modules, 2565 dependencies, 0 new error violations (a cycle counts once), 0 warnings
+exit code: 1

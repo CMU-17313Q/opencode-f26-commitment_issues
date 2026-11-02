@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>dependency-cruiser - results</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style type="text/css">
+    body {
+      font-family: sans-serif;
+      margin: 0 auto;
+      max-width: 90%;
+      line-height: 1.6;
+      font-size: 14px;
+      color: #444;
+      padding: 0 10px;
+      background-color: #fff;
+    }
+
+    footer {
+      color: gray;
+      margin-top: 1.4em;
+      border-top: solid 1px currentColor
+    }
+
+    a {
+      text-decoration: none
+    }
+
+    a.noiseless {
+      color: currentColor
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.2
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th { 
+      position: sticky; 
+      top: 0; 
+      z-index: 2; 
+      background-color: white 
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 4px;
+    }
+
+    tbody tr:nth-child(odd) {
+      background-color: rgba(128, 128, 128, 0.2);
+    }
+
+    .error {
+      color: red;
+    }
+
+    .warn {
+      color: orange;
+    }
+
+    .info {
+      color: blue;
+    }
+
+    .ignore {
+      color:gray;
+    }
+
+    .ok {
+      color: limegreen;
+    }
+
+    td.nowrap {
+      white-space: nowrap
+    }
+
+    svg {
+      fill: currentColor
+    }
+
+    #show-unviolated {
+      display: block
+    }
+
+    #hide-unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target #show-unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target #hide-unviolated {
+      display: block
+    }
+
+    tr.unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target tr.unviolated {
+      display: table-row;
+      color: gray;
+    }
+
+    #show-ignored {
+      display: block
+    }
+
+    #hide-ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target #show-ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target #hide-ignored {
+      display: block
+    }
+
+    tr.ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target tr.ignored {
+      display: table-row;
+      color: gray;
+    }
+
+    .p__svg--inline {
+      vertical-align: top;
+      width: 1.2em;
+      height: 1.2em
+    }
+
+    .controls {
+      background-color: #fff;
+      vertical-align: bottom;
+      text-align: center
+    }
+
+    .controls:hover {
+      opacity: 1;
+    }
+
+    .controls a {
+      text-decoration: none;
+      color: gray;
+    }
+
+    .controls a:hover {
+      text-decoration: underline;
+      color: blue;
+    }
+
+    .extra {
+      color: gray;
+    }
+    .dependency-type {
+      font-family: courier;
+      padding: 4px;
+      border-radius: 3px;
+    }
+    .local {
+      background-color: lightgray;
+      color: black;
+    }
+    .npm-bundled, .npm-dev, .npm-no-pkg, .npm-optional, .npm-peer, .npm-unknown, .npm {
+      background-color: darkred;
+      color: white;
+    }
+    .aliased {
+      background-color: blue;
+      color: white;
+    }
+    .aliased-subpath-import, .core {
+      background-color: green;
+      color: white;
+    }
+    .type-import, .type-only {
+      background-color: blue;
+      color: white;
+    }
+  </style>
+  <style type="text/css" media="print">
+    th,
+    td {
+      border: 1px solid #444;
+    }
+
+    .controls {
+      display: none
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Forbidden dependency check - results</h1>
+  <span id="show-all-the-rules">
+  <h2><svg class="p__svg--inline" viewBox="0 0 14 16" version="1.1" aria-hidden="true">
+      <path fill-rule="evenodd"
+        d="M11.5 8L8.8 5.4 6.6 8.5 5.5 1.6 2.38 8H0v2h3.6l.9-1.8.9 5.4L9 8.5l1.6 1.5H14V8h-2.5z"></path>
+    </svg> Summary</h2>
+  <p>
+    <div style="float:left;padding-right:20px">
+      <strong>563</strong> modules
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>2565</strong> dependencies
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>0</strong> errors
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>0</strong> warnings
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>0</strong> informational
+    </div>
+    <div style="float:left;padding-right:20px" class="ignore">
+      <strong>20</strong> ignored
+    </div>
+    <div style="float:left;padding-right:20px" class="ignore">
+    <strong>17</strong> stale entries in baseline
+    </div>
+    &nbsp;
+  </p>
+  <table>
+    <tbody>
+      <thead>
+        <tr>
+          <th></th>
+          <th>severity</th>
+          <th>rule</th>
+          <th>violations</th>
+          <th>ignored</th>
+          <th>explanation</th>
+        </tr>
+      </thead>
+      <tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#no-circular-instance"
+         id="no-circular-definition" 
+         class="noiseless">no-circular</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>18</strong></td>
+    <td>Import cycles make module init order fragile (undefined at import time) and tie modules together so they can't be tested or changed alone. Break the cycle by moving the shared part into its own module.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#no-orphans-instance"
+         id="no-orphans-definition" 
+         class="noiseless">no-orphans</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>2</strong></td>
+    <td>This module is not imported by anything and imports nothing. It is likely dead code. Reported only, never blocks.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#ai-xam-domain-is-pure-instance"
+         id="ai-xam-domain-is-pure-definition" 
+         class="noiseless">ai-xam-domain-is-pure</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>ai-xam/domain holds pure exam logic. It must not import components, services, the AI client or Solid.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#ai-xam-no-ui-below-components-instance"
+         id="ai-xam-no-ui-below-components-definition" 
+         class="noiseless">ai-xam-no-ui-below-components</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>ai-xam services and ai modules sit below the UI. They must not import components or pages.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#focus-session-controller-no-ui-instance"
+         id="focus-session-controller-no-ui-definition" 
+         class="noiseless">focus-session-controller-no-ui</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>The focus-session controller is UI-free (it talks to the UI through ports.ts). It must not import components or .tsx files.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#learn-flow-no-session-instance"
+         id="learn-flow-no-session-definition" 
+         class="noiseless">learn-flow-no-session</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>learn-flow graph extraction and rendering are pure. They must not import the session, server or tool layers.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#not-to-test-instance"
+         id="not-to-test-definition" 
+         class="noiseless">not-to-test</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>Production code must not import tests, test fakes or fixtures: they would ship in the bundle.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#not-to-unresolvable-instance"
+         id="not-to-unresolvable-definition" 
+         class="noiseless">not-to-unresolvable</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>This import points at a file or package that does not exist, or at a package this workspace does not declare in its package.json. Fix the path or add the package.</td>
+  </tr>
+      <tr>
+        <td colspan="6" class="controls">
+          <div id="show-unviolated">
+            &downarrow; <a href="#show-all-the-rules">also show unviolated rules</a>
+          </div>
+          <div id="hide-unviolated">
+            &uparrow; <a href="">hide unviolated rules</a>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  </span>
+
+  <span id="show-ignored-violations">
+      <h2><svg class="p__svg--inline" viewBox="0 0 12 16" version="1.1" aria-hidden="true">
+        <path fill-rule="evenodd"
+          d="M5.05.31c.81 2.17.41 3.38-.52 4.31C3.55 5.67 1.98 6.45.9 7.98c-1.45 2.05-1.7 6.53 3.53 7.7-2.2-1.16-2.67-4.52-.3-6.61-.61 2.03.53 3.33 1.94 2.86 1.39-.47 2.3.53 2.27 1.67-.02.78-.31 1.44-1.13 1.81 3.42-.59 4.78-3.42 4.78-5.56 0-2.84-2.53-3.22-1.25-5.61-1.52.13-2.03 1.13-1.89 2.75.09 1.08-1.02 1.8-1.86 1.33-.67-.41-.66-1.19-.06-1.78C8.18 5.31 8.68 2.45 5.05.32L5.03.3l.02.01z">
+        </path>
+      </svg> All violations</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>severity</th>
+          <th>rule</th>
+          <th>from</th>
+          <th>types</th>
+          <th>to</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/agent/agent.ts">src/agent/agent.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/effect/app-runtime.ts">src/effect/app-runtime.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/control-plane/workspace.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/effect/app-runtime.ts">src/effect/app-runtime.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/provider/auth.ts">src/provider/auth.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/provider/provider.ts">src/provider/provider.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/groups/provider.ts">src/server/routes/instance/httpapi/groups/provider.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/handlers/provider.ts">src/server/routes/instance/httpapi/handlers/provider.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/server.ts">src/server/routes/instance/httpapi/server.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/server.ts">src/server/routes/instance/httpapi/server.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/pty-environment.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/server.ts">src/server/routes/instance/httpapi/server.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/compaction.ts">src/session/compaction.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/llm.ts">src/session/llm.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/processor.ts">src/session/processor.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/agent/agent.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/session/compaction.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/session/llm.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/tool/registry.ts">src/tool/registry.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts</td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-orphans-definition" 
+         id="no-orphans-instance"
+         class="noiseless">no-orphans</a>
+    </td>
+    <td><a href="src/util/defer.ts">src/util/defer.ts</a></td>
+    <td><span class="dependency-type " title="dependency types: "></span></td>
+    <td></td>
+  </tr>
+  <tr class="ignored">
+    <td class="ignore">ignore</td>
+    <td class="nowrap">
+      <a href="#no-orphans-definition" 
+         id="no-orphans-instance"
+         class="noiseless">no-orphans</a>
+    </td>
+    <td><a href="src/util/signal.ts">src/util/signal.ts</a></td>
+    <td><span class="dependency-type " title="dependency types: "></span></td>
+    <td></td>
+  </tr>
+      <tr>
+        <td colspan="5" class="controls">
+          <div id="show-ignored">
+            &downarrow; <a href="#show-ignored-violations">also show ignored violations</a>
+          </div>
+          <div id="hide-ignored">
+            &uparrow; <a href="">hide ignored violations</a>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+    </span>
+  <span id="stale-baseline-entries">
+      <h2><svg class="p__svg--inline" viewBox="144 144 512 512" version="1.1" aria-hidden="true"><path d="M583.48 299.64a202 202 0 0 0-108.32-109.58 194.4 194.4 0 0 0-150.29 0 202.3 202.3 0 0 0-123.43 186.4v224.26a25.2 25.2 0 0 0 5.04 14.7q4.46.63 8.96.61c8.52.2 16.98-1.52 24.74-5.04a89 89 0 0 0 26.8-22.57c2.57-2.82 5.04-5.54 7.66-8.06 3.6-3.67 7.7-6.84 12.14-9.42a41 41 0 0 1 20.81-5.04c19.75 0 29.43 10.53 40.6 22.73a101 101 0 0 0 22.58 20.15 63 63 0 0 0 4.48 2.42 60.4 60.4 0 0 0 49.48 0q2.33-1.08 4.43-2.37c8.5-5.54 16.1-12.34 22.57-20.15 11.18-12.2 20.86-22.73 40.6-22.73A41 41 0 0 1 513.2 571a58 58 0 0 1 12.15 9.42 132 132 0 0 1 7.65 8.07 89 89 0 0 0 27 22.36 57 57 0 0 0 24.75 5.04q4.53 0 9.01-.6c3.2-4.25 4.95-9.4 5.04-14.71v-224.1a202 202 0 0 0-15.32-76.83zm0 124.74v176.33c-18.9-.45-28.41-10.73-39.35-22.67-2.42-2.62-5.04-5.34-7.5-7.96a83 83 0 0 0-11.44-9.73 55.4 55.4 0 0 0-32.8-10.07c-26.4 0-39.9 14.71-51.74 27.66s-20.9 23.02-40.65 23.02-29.43-10.53-40.61-22.72-25.2-27.66-51.74-27.66a55.4 55.4 0 0 0-32.75 10.08 83 83 0 0 0-11.44 9.72c-2.62 2.62-5.04 5.34-7.56 7.96-10.93 11.94-20.45 22.17-39.3 22.67V376.46c0-102.78 82.33-186.4 183.5-186.4 101.16 0 183.49 83.63 183.49 186.4z"/><path d="M511.69 280.75a59.6 59.6 0 1 0 59.6 63.83q.4-3.98 0-7.95a59.55 59.55 0 0 0-59.6-55.88m-44.53 59.65a44.45 44.45 0 0 1 66.1-38.84h-.91a38.92 38.92 0 0 0 0 77.84h.9a44.45 44.45 0 0 1-66.1-38.84zm-38.59-3.98a59.6 59.6 0 1 0 0 7.96q.4-3.99 0-7.96m-104.14 3.98a44.44 44.44 0 0 1 66.1-38.84h-.6a38.91 38.91 0 1 0 0 77.84h.9a44.45 44.45 0 0 1-66.4-39"/>
+    </svg> Stale entries in the baseline</h2>
+    <p>
+      These violations are in the baseline (typically <tt>.dependency-cruiser-known-violations.json</tt>), 
+      but don't match any real violations anymore, e.g. because they were fixed in the meantime. You
+      can remove them with dependency-cruiser's 
+      <a href="https://github.com/sverweij/dependency-cruiser/blob/main/doc/cli.md#--baseline-create-or-update-a-known-violations-baseline"><tt>--baseline --baseline-mode shrink-only</tt>
+      command line options</a>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>severity</th>
+          <th>rule</th>
+          <th>from</th>
+          <th>types</th>
+          <th>to</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/agent/agent.ts">src/agent/agent.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/public.ts &rightarrow;<br/>src/server/routes/instance/httpapi/api.ts &rightarrow;<br/>src/server/routes/instance/httpapi/groups/config.ts &rightarrow;<br/>src/server/routes/instance/httpapi/middleware/instance-context.ts &rightarrow;<br/>src/server/routes/instance/httpapi/middleware/workspace-routing.ts &rightarrow;<br/>src/control-plane/workspace.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts &rightarrow;<br/>src/agent/agent.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/effect/app-runtime.ts">src/effect/app-runtime.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/control-plane/workspace.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/effect/app-runtime.ts">src/effect/app-runtime.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/public.ts &rightarrow;<br/>src/server/routes/instance/httpapi/api.ts &rightarrow;<br/>src/server/routes/instance/httpapi/groups/config.ts &rightarrow;<br/>src/server/routes/instance/httpapi/middleware/instance-context.ts &rightarrow;<br/>src/server/routes/instance/httpapi/middleware/workspace-routing.ts &rightarrow;<br/>src/control-plane/workspace.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/provider/auth.ts">src/provider/auth.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/provider/auth.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/provider/provider.ts">src/provider/provider.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/public.ts &rightarrow;<br/>src/server/routes/instance/httpapi/api.ts &rightarrow;<br/>src/server/routes/instance/httpapi/groups/config.ts &rightarrow;<br/>src/provider/provider.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/groups/provider.ts">src/server/routes/instance/httpapi/groups/provider.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/public.ts &rightarrow;<br/>src/server/routes/instance/httpapi/api.ts &rightarrow;<br/>src/server/routes/instance/httpapi/groups/provider.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/handlers/provider.ts">src/server/routes/instance/httpapi/handlers/provider.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/provider/auth.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/handlers/provider.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/server.ts">src/server/routes/instance/httpapi/server.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/server/routes/instance/httpapi/server.ts">src/server/routes/instance/httpapi/server.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/pty-environment.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/compaction.ts">src/session/compaction.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/session/compaction.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/llm.ts">src/session/llm.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/session/llm.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/processor.ts">src/session/processor.ts</a></td>
+    <td><span class="dependency-type aliased aliased-tsconfig aliased-tsconfig-paths local import" title="dependency types: aliased, aliased-tsconfig, aliased-tsconfig-paths, local, import">@</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/session/processor.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/agent/agent.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts &rightarrow;<br/>src/session/prompt.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/session/prompt.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/session/compaction.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts &rightarrow;<br/>src/session/prompt.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/session/prompt.ts">src/session/prompt.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/session/llm.ts &rightarrow;<br/>src/plugin/index.ts &rightarrow;<br/>src/control-plane/adapters/index.ts &rightarrow;<br/>src/control-plane/adapters/worktree.ts &rightarrow;<br/>src/effect/app-runtime.ts &rightarrow;<br/>src/session/prompt.ts</td>
+  </tr>
+  <tr>
+    <td class="error">error</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="src/tool/registry.ts">src/tool/registry.ts</a></td>
+    <td><span class="dependency-type local import" title="dependency types: local, import">.</span></td>
+    <td>src/plugin/index.ts &rightarrow;<br/>src/server/server.ts &rightarrow;<br/>src/server/routes/instance/httpapi/server.ts &rightarrow;<br/>src/tool/registry.ts</td>
+  </tr>
+      </tbody>
+    </table>
+    </span>
+  <footer>
+    <p><a href="https://github.com/sverweij/dependency-cruiser">dependency-cruiser@18.7.0</a> /
+      2026-11-02T09:14:06.626Z</p>
+  </footer>
+</body>
+</html>

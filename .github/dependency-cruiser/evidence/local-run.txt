@@ -1,0 +1,18 @@
+$ bash .github/dependency-cruiser/run.sh   # 2026-11-02T09:13:55Z, on a80bb93 + this branch
+::group::dependency-cruiser packages/app
+
+✔ no dependency violations found (710 modules, 2591 dependencies cruised)
+‼ 18 known violations ignored. Run with --no-ignore-known to see them.
+‼ 7 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.
+
+::endgroup::
+packages/app: 710 modules, 2591 dependencies, 0 new error violations (a cycle counts once), 0 warnings
+::group::dependency-cruiser packages/opencode
+
+✔ no dependency violations found (563 modules, 2565 dependencies cruised)
+‼ 20 known violations ignored. Run with --no-ignore-known to see them.
+‼ 17 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.
+
+::endgroup::
+packages/opencode: 563 modules, 2565 dependencies, 0 new error violations (a cycle counts once), 0 warnings
+exit code: 0

@@ -1,0 +1,25 @@
+$ bash .github/dependency-cruiser/test-rules.sh   # 2026-11-02T09:12:50Z, dependency-cruiser 18.7.0
+PASS  cycle:         a.ts <-> b.ts runtime cycle is an error
+PASS  type cycle:    import type cycle is allowed
+PASS  self export:   export * as Self from "./self" is allowed
+PASS  alias:         @/ tsconfig alias resolves
+PASS  unresolvable:  import of a missing file is an error
+PASS  ghost dep:     package not in package.json is an error
+PASS  test import:   production code importing a .test.ts is an error
+PASS  ai-xam:        domain importing components is an error
+PASS  ai-xam:        services importing components is an error
+PASS  focus-session: controller importing components is an error
+PASS  learn-flow:    importing the session layer is an error
+PASS  orphan:        unused module is a warning, not an error
+
+error	ai-xam-domain-is-pure	src/pages/ai-xam/domain/score.ts -> src/pages/ai-xam/components/card.tsx
+error	ai-xam-no-ui-below-components	src/pages/ai-xam/services/ingest.ts -> src/pages/ai-xam/components/card.tsx
+error	focus-session-controller-no-ui	src/pages/home/focus-session/controller/timer.ts -> src/pages/home/focus-session/components/panel.tsx
+error	learn-flow-no-session	src/command/learn-flow/extract.ts -> src/session/prompt.ts
+error	no-circular	src/cycle/a.ts -> src/cycle/b.ts
+error	not-to-test	src/lib/imports-test.ts -> src/lib/thing.test.ts
+error	not-to-unresolvable	src/lib/ghost-dep.ts -> zod
+error	not-to-unresolvable	src/lib/unresolvable.ts -> ./does-not-exist
+warn	no-orphans	src/lib/orphan.ts -> src/lib/orphan.ts
+
+All 12 checks passed.
