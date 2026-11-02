@@ -6,7 +6,18 @@
       "tool": {
         "driver": {
           "name": "CodeQL",
-          "semanticVersion": "2.27.3"
+          "semanticVersion": "2.27.3",
+          "rules": [
+            {
+              "id": "js/unused-local-variable"
+            },
+            {
+              "id": "js/useless-assignment-to-local"
+            },
+            {
+              "id": "js/comparison-between-incompatible-types"
+            }
+          ]
         }
       },
       "results": [

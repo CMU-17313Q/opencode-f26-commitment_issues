@@ -5,7 +5,7 @@ $ codeql database analyze db --format=sarif-latest --output=main.sarif
 $ bash .github/codeql/check-findings.sh main.sarif
 ## CodeQL code quality
 
-Findings: **102**. New (not in the baseline): **0**. Baseline entries no longer found: **0**.
+Queries run: **98**. Findings: **102**. New (not in the baseline): **0**. Baseline entries no longer found: **0**.
 exit code: 0
 
 # Findings by rule (all in upstream opencode code; 0 in Learning Companion code):

@@ -5,7 +5,7 @@
 $ bash .github/codeql/check-findings.sh neg.sarif
 ## CodeQL code quality
 
-Findings: **104**. New (not in the baseline): **2**. Baseline entries no longer found: **0**.
+Queries run: **98**. Findings: **104**. New (not in the baseline): **2**. Baseline entries no longer found: **0**.
 
 | Rule | Location | Message |
 | --- | --- | --- |

@@ -13,6 +13,13 @@ dir="$(cd "$(dirname "$0")" && pwd)"
 sarif="$1"
 baseline="${2:-$dir/known-findings.tsv}"
 
+# Guard against a run that silently checked nothing (bad config, empty suite).
+rules="$(jq '[.runs[].tool.driver.rules[]?] | length' "$sarif")"
+if [ "$rules" -eq 0 ]; then
+  echo "::error::$sarif lists no CodeQL queries. The analysis did not run the code-quality suite; check codeql-config.yml."
+  exit 2
+fi
+
 # key <TAB> file:line <TAB> message, one per finding, sorted by key
 findings="$(jq -r '.runs[].results[] | .locations[0].physicalLocation as $l
   | ["\(.ruleId)|\($l.artifactLocation.uri)|\(.partialFingerprints.primaryLocationLineHash)",
@@ -38,7 +45,7 @@ fixed="$(comm -23 <(printf '%s\n' "$known" | sed '/^$/d') <(printf '%s\n' "$find
 {
   echo "## CodeQL code quality"
   echo
-  echo "Findings: **${total}**. New (not in the baseline): **${count}**. Baseline entries no longer found: **${fixed}**."
+  echo "Queries run: **${rules}**. Findings: **${total}**. New (not in the baseline): **${count}**. Baseline entries no longer found: **${fixed}**."
   if [ "$count" -gt 0 ]; then
     echo
     echo "| Rule | Location | Message |"
