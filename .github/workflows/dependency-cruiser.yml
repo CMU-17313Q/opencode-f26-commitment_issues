@@ -1,0 +1,81 @@
+name: dependency-cruiser
+
+# Code Quality / Static Analysis check: enforces import rules (no runtime cycles, no
+# unresolvable imports, no test code in production, Learning Companion layering) on
+# packages/app/src and packages/opencode/src. Rules live in .dependency-cruiser.cjs.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/app/src/**"
+      - "packages/opencode/src/**"
+      - "packages/app/tsconfig.json"
+      - "packages/opencode/tsconfig.json"
+      - "packages/app/package.json"
+      - "packages/opencode/package.json"
+      - "package.json"
+      - "bun.lock"
+      - ".dependency-cruiser.cjs"
+      - ".github/dependency-cruiser/**"
+      - ".github/workflows/dependency-cruiser.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  cruise:
+    name: cruise
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      OUT: ${{ github.workspace }}/depcruise-report
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      # Needed so dependency-cruiser can resolve workspace packages and read package.json deps.
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Test the rules against fixtures
+        run: bash .github/dependency-cruiser/test-rules.sh
+
+      # Fails only on violations that are not in .github/dependency-cruiser/known-violations.*.json.
+      - name: Run dependency-cruiser
+        run: bash .github/dependency-cruiser/run.sh
+
+      - name: Write job summary
+        if: always()
+        run: |
+          for pkg in app opencode; do
+            if [ -s "$OUT/$pkg.md" ]; then
+              echo "# packages/$pkg"
+              cat "$OUT/$pkg.md"
+              echo
+            fi
+          done >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dependency-cruiser-report-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          # Same as osv-scanner: kept 90 days so the report stays available as evidence.
+          retention-days: 90
+          path: depcruise-report/

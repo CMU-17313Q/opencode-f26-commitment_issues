@@ -1,0 +1,1 @@
+{ "name": "depcruise-testdata", "private": true, "dependencies": { "solid-js": "*" } }

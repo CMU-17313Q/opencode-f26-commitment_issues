@@ -166,6 +166,36 @@ brew install osv-scanner
 osv-scanner scan source --recursive --config=./osv-scanner.toml ./
 ```
 
+## Import rules (dependency-cruiser)
+
+[`dependency-cruiser.yml`](.github/workflows/dependency-cruiser.yml) runs
+[dependency-cruiser](https://github.com/sverweij/dependency-cruiser) on `packages/app/src` and `packages/opencode/src`.
+It reads every `import` without running any code and checks the rules in
+[`.dependency-cruiser.cjs`](.dependency-cruiser.cjs):
+
+- **no-circular**: no runtime import cycles. `import type` cycles and opencode's `export * as X from "./self"`
+  namespace pattern are allowed.
+- **not-to-unresolvable**: every import points at a real file or a package declared in that workspace's `package.json`.
+- **not-to-test**: production code never imports `*.test.ts`, `test-fakes.ts` or `*.fixtures.ts`.
+- **Learning Companion layering**: `ai-xam/domain` imports nothing outside itself; `ai-xam/services` and `ai-xam/ai`
+  don't import components; the focus-session `controller/` doesn't import UI; `command/learn-flow` doesn't import the
+  session, server or tool layers.
+- **no-orphans** (warning only): modules nothing imports.
+
+It runs on PRs that touch those two `src` folders, their `package.json`/`tsconfig.json`, `bun.lock` or the check's own
+files, and on every push to `main`. It fails only on **new** violations: the ones already in the codebase when the check
+was added (upstream opencode import cycles, one broken import in a Storybook story) are listed in
+`.github/dependency-cruiser/known-violations.{app,opencode}.json`. The job summary shows a table per package, and the
+full report (Markdown + HTML) is attached to the run as the `dependency-cruiser-report-*` artifact.
+
+If you fix a known violation, or must accept a new one, regenerate the baseline and commit it with a reason in the PR:
+
+```bash
+bash .github/dependency-cruiser/run.sh            # what CI runs
+bash .github/dependency-cruiser/run.sh baseline   # rewrite known-violations.*.json
+bash .github/dependency-cruiser/test-rules.sh     # after changing .dependency-cruiser.cjs
+```
+
 ## Quick reference
 
 ```bash
@@ -175,4 +205,5 @@ cd packages/<name> && bun test               # a specific package's tests, regar
 cd packages/app && bun run test:e2e:local e2e/<smoke|user-story|regression>
 cd packages/opencode && bun run test:httpapi # HttpApi exerciser gates (nightly in CI)
 osv-scanner scan source --recursive --config=./osv-scanner.toml ./  # dependency vulnerability scan
+bash .github/dependency-cruiser/run.sh       # import rules (cycles, layering), new violations only
 ```
