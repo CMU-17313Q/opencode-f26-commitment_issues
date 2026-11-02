@@ -190,6 +190,36 @@ BASELINE=write bash .github/codeql/check-findings.sh path/to/javascript.sarif
 bash .github/codeql/test-check-findings.sh
 ```
 
+## API contract check (oasdiff)
+
+[`oasdiff.yml`](.github/workflows/oasdiff.yml) compares the server's OpenAPI spec (`GET /doc`, the same spec the SDK is
+generated from) before and after a change, using [oasdiff](https://github.com/oasdiff/oasdiff).
+[`script/openapi-snapshot.sh`](script/openapi-snapshot.sh) starts the server with Bun (the Dockerfile's command, with
+`serve` instead of `web`), waits for `/global/health`, and saves `/doc`. No model API keys are needed.
+
+- **On PRs that change server code or the packages its schemas come from (`packages/opencode/src`, `sdk`, `core`,
+  `server`, `schema`, `protocol`, `llm`), `bun.lock`, the `Dockerfile`, the snapshot script, the ignore file or the
+  workflow itself**, it fails on ERR-level (breaking) changes such as a removed endpoint, a removed response
+  field or a new required request field. WARN-level changes show up as annotations only. Both specs and the report are
+  attached to the run as the `oasdiff-pull_request-*` artifact.
+- **On push to `main`**, it writes a report-only changelog against the previous commit (`oasdiff-push-*` artifact), so
+  every deploy to the VM has a record of what changed in the API.
+
+If a breaking change is intentional, copy its line from `oasdiff breaking --format singleline` into
+[`.oasdiff-err-ignore.txt`](.oasdiff-err-ignore.txt) with a reason, an issue link and the approving reviewer. The
+line must keep oasdiff's exact wording, since a paraphrased description won't match.
+
+To run the same check locally (`brew install oasdiff`, or a binary from the
+[releases page](https://github.com/oasdiff/oasdiff/releases)):
+
+```bash
+git worktree add --detach /tmp/oasdiff-base origin/main
+./script/openapi-snapshot.sh /tmp/oasdiff-base /tmp/base.json  # runs bun install in the worktree first
+./script/openapi-snapshot.sh . /tmp/head.json
+oasdiff breaking /tmp/base.json /tmp/head.json --fail-on ERR --err-ignore .oasdiff-err-ignore.txt
+git worktree remove --force /tmp/oasdiff-base
+```
+
 ## Quick reference
 
 ```bash
@@ -199,4 +229,5 @@ cd packages/<name> && bun test               # a specific package's tests, regar
 cd packages/app && bun run test:e2e:local e2e/<smoke|user-story|regression>
 cd packages/opencode && bun run test:httpapi # HttpApi exerciser gates (nightly in CI)
 osv-scanner scan source --recursive --config=./osv-scanner.toml ./  # dependency vulnerability scan
+./script/openapi-snapshot.sh . /tmp/head.json  # OpenAPI spec for oasdiff (see above)
 ```

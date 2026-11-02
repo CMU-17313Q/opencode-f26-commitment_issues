@@ -1,0 +1,43 @@
+name: AI Boundary Fuzzing
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-boundary-fuzz-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-boundary-fuzz:
+    name: AI Boundary Fuzzing (fast-check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Bun and install workspace dependencies
+        uses: ./.github/actions/setup-bun
+
+      - name: Run property-based AI boundary tests
+        working-directory: packages/app
+        shell: bash
+        run: |
+          set -o pipefail
+          bun test --conditions=solid --preload ./happydom.ts ./src/pages/ai-xam/fuzz/ai-boundary.fuzz.test.ts 2>&1 | tee ai-boundary-fuzz-results.txt
+
+      - name: Upload fuzz-test log for grading and debugging
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ai-boundary-fuzz-log-${{ github.run_id }}-${{ github.run_attempt }}
+          path: packages/app/ai-boundary-fuzz-results.txt
+          retention-days: 14
+          if-no-files-found: warn
