@@ -1,0 +1,19 @@
+# CodeQL code-quality run on main (a80bb93), 2026-11-02T15:19:13Z, CodeQL command-line toolchain release 2.27.3.
+$ codeql database create db --language=javascript-typescript --build-mode=none --codescanning-config=.github/codeql/codeql-config.yml
+$ codeql database analyze db --format=sarif-latest --output=main.sarif
+#   98 queries run, 102 findings
+$ bash .github/codeql/check-findings.sh main.sarif
+## CodeQL code quality
+
+Findings: **102**. New (not in the baseline): **0**. Baseline entries no longer found: **0**.
+exit code: 0
+
+# Findings by rule (all in upstream opencode code; 0 in Learning Companion code):
+     78 js/unused-local-variable
+     11 js/trivial-conditional
+      4 js/useless-assignment-to-local
+      3 js/property-access-on-non-object
+      2 js/useless-expression
+      2 js/unneeded-defensive-code
+      1 js/use-before-declaration
+      1 js/comparison-between-incompatible-types

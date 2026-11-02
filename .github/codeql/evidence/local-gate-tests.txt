@@ -1,0 +1,10 @@
+$ bash .github/codeql/test-check-findings.sh   # 2026-11-02T15:19:13Z
+PASS  new findings:   exit code is 1
+PASS  new findings:   both new findings are counted
+PASS  new findings:   unused variable gets a GitHub annotation
+PASS  new findings:   useless assignment gets a GitHub annotation
+PASS  new findings:   baselined finding is not annotated
+PASS  known only:     exit code is 0
+PASS  known only:     no new findings
+PASS  known only:     fixed baseline entry is reported
+All 8 checks passed.
