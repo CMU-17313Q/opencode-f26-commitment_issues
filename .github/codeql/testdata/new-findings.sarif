@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodeQL",
+          "semanticVersion": "2.27.3"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "js/unused-local-variable",
+          "message": {
+            "text": "Unused variable unusedTotal."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "859afd587fd90d58:1"
+          }
+        },
+        {
+          "ruleId": "js/useless-assignment-to-local",
+          "message": {
+            "text": "The value assigned to score here is unused."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "77b08f67f42469e4:1"
+          }
+        },
+        {
+          "ruleId": "js/comparison-between-incompatible-types",
+          "message": {
+            "text": "Variable 'error' is of type date, object or regular expression, but it is compared to [an expression](1) of type null."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "packages/app/src/pages/error.tsx"
+                },
+                "region": {
+                  "startLine": 33
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "fadfe562fc7792c3:1"
+          }
+        }
+      ]
+    }
+  ]
+}
