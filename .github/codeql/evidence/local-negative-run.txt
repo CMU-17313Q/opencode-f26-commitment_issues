@@ -11,6 +11,7 @@ Queries run: **98**. Findings: **104**. New (not in the baseline): **2**. Baseli
 | --- | --- | --- |
 | js/unused-local-variable | packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts:3 | Unused variable unusedTotal. |
 | js/useless-assignment-to-local | packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts:5 | The value assigned to score here is unused. |
+::notice title=CodeQL code quality::Queries run: 98. Findings: 104. New: 2. Baseline entries no longer found: 0.
 ::error file=packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts,line=3,title=js/unused-local-variable::Unused variable unusedTotal.
 ::error file=packages/app/src/pages/ai-xam/domain/tmp-quality-bugs.ts,line=5,title=js/useless-assignment-to-local::The value assigned to score here is unused.
 exit code: 1

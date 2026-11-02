@@ -6,6 +6,7 @@
 # testdata/known-only.sarif: only the baselined finding.
 # testdata/baseline.tsv: that finding, plus one entry whose code has since been fixed.
 # testdata/no-queries.sarif: a run that executed no queries (e.g. a broken config).
+# testdata/grouped-by-pack.sarif: known-only.sarif in codeql-action's format (rules under tool.extensions).
 #
 # Run from anywhere: bash .github/codeql/test-check-findings.sh
 set -euo pipefail
@@ -37,6 +38,10 @@ check "known only:     exit code is 0" "$code" "0"
 check "known only:     no new findings" "$(grep -o 'New (not in the baseline): \*\*[0-9]*' <<< "$out" | grep -o '[0-9]*$')" "0"
 check "known only:     fixed baseline entry is reported" "$(grep -o 'no longer found: \*\*[0-9]*' <<< "$out" | grep -o '[0-9]*$')" "1"
 
+run "$t/grouped-by-pack.sarif"
+check "action format:  rules grouped by pack are counted" "$(grep -o 'Queries run: \*\*[0-9]*' <<< "$out" | grep -o '[0-9]*$')" "3"
+check "action format:  exit code is 0" "$code" "0"
+
 run "$t/no-queries.sarif"
 check "no queries:     a run with no queries fails instead of passing" "$code" "2"
 
@@ -44,4 +49,4 @@ if [ "$fails" -gt 0 ]; then
   echo "$fails check(s) failed."
   exit 1
 fi
-echo "All 9 checks passed."
+echo "All 11 checks passed."

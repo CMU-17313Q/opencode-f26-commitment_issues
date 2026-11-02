@@ -13,8 +13,9 @@ dir="$(cd "$(dirname "$0")" && pwd)"
 sarif="$1"
 baseline="${2:-$dir/known-findings.tsv}"
 
-# Guard against a run that silently checked nothing (bad config, empty suite).
-rules="$(jq '[.runs[].tool.driver.rules[]?] | length' "$sarif")"
+# Guard against a run that silently checked nothing (bad config, empty suite). The CLI lists queries
+# under tool.driver.rules; codeql-action groups them by pack under tool.extensions[].rules.
+rules="$(jq '[.runs[].tool | (.driver.rules[]?, .extensions[]?.rules[]?)] | length' "$sarif")"
 if [ "$rules" -eq 0 ]; then
   echo "::error::$sarif lists no CodeQL queries. The analysis did not run the code-quality suite; check codeql-config.yml."
   exit 2
@@ -53,6 +54,7 @@ fixed="$(comm -23 <(printf '%s\n' "$known" | sed '/^$/d') <(printf '%s\n' "$find
     printf '%s\n' "$new" | awk -F'\t' '{ split($1, k, "|"); printf "| %s | %s | %s |\n", k[1], $2, $3 }'
   fi
 } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
+echo "::notice title=CodeQL code quality::Queries run: ${rules}. Findings: ${total}. New: ${count}. Baseline entries no longer found: ${fixed}."
 
 if [ "$count" -gt 0 ]; then
   printf '%s\n' "$new" | awk -F'\t' '{ split($1, k, "|"); split($2, l, ":"); printf "::error file=%s,line=%s,title=%s::%s\n", l[1], l[2], k[1], $3 }'
