@@ -9,6 +9,8 @@ WORKDIR /app
 
 COPY . .
 RUN bun install --frozen-lockfile
+RUN OPENCODE_CHANNEL=prod bun run --cwd packages/app build
+ENV OPENCODE_WEB_UI_DIR=/app/packages/app/dist
 
 EXPOSE 4096
 
