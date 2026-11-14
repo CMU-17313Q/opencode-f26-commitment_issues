@@ -1,0 +1,28 @@
+# Traceability: Amen Ghabara (aghabara)
+
+**Target feature:** `/learn-flow`, which draws an ASCII flowchart of a TypeScript/JavaScript function and explains it. Main files: `packages/opencode/src/command/learn-flow/extract.ts`, `graph.ts`, `render.ts`, `packages/opencode/src/tool/learn-flow.ts`, `packages/opencode/src/command/template/learn-flow.txt`
+
+## Requirements
+
+| ID | Interview evidence | Requirement | Acceptance Criteria | Changed in P4B? | Property (kind) | Test |
+|---|---|---|---|---|---|---|
+| R1 | C-1, C-2: decisions and actions "look identical... a bit confusing" | Decision boxes look different from action boxes. | For any generated function, every decision box starts with a `?` marker, and no step or return box does. For `grade`, the `score >= 90` and `score >= 80` boxes start with `?`, and the `return` boxes do not. | Yes (made general) | Every decision box has `?`, no other box does (invariant) | `test/flow/learn-flow.property.test.ts`: "R1: only decision boxes are marked with ?" |
+| R2 | S-1: the "yes" part "did not make sense" | Each branch label says which decision it answers. | For `grade`, the branch lines read `score >= 90: yes` and `score >= 90: no`, not just `yes` and `no`. | No | Not tested in P4B | |
+| R3 | S-3: "adding an arrow... would indicate the looping back more clearly" | A loop shows an arrow pointing back to its condition. | For `total`, the loop-back line contains an arrow character (`^`) and names `i < n`. | No | Not tested in P4B | |
+| R4 | S-2: "`nums` is not clear... it is not obvious it is a user parameter" | The start box shows the function name and its parameters. | For `sumPositive`, the first box reads `start: sumPositive(nums)`. | No | Not tested in P4B | |
+| R5 | O-1: "it should be an error" | If the function doesn't exist, it shows an error message and no chart. | For any generated file and any name that is not a function in it, the result is an error that mentions the name, and the output contains no box (`+---`). | Yes (made general) | Missing name always gives an error and no chart (invariant) | `test/flow/learn-flow.property.test.ts`: "R5: a missing function gives an error and no chart" |
+| R6 | O-2: small differences are fine "but if you are nitpicky they can be an issue" | Comments and blank lines don't change the chart at all. Renaming variables doesn't change the chart's shape. | For any generated function: adding comments or blank lines gives exactly the same output; renaming a variable gives the same number and kinds of boxes and branches. | Yes (split) | Formatting and renaming keep the chart (metamorphic) | `test/flow/learn-flow.property.test.ts`: "R6a: comments and blank lines don't change the chart", "R6b: renaming keeps the chart's shape" |
+| R7 | C-3, C-4, O-3: it should say "the representation for this case is not accurate" | When part of a function can't be drawn, the chart still draws the rest, marks that part as `unsupported`, and warns that the chart is incomplete. | For any generated function containing a `try/catch`, the output has an `unsupported: try/catch` box and a line saying the chart is incomplete. Functions without unsupported code have no such line. | Yes (conflict) | Warning appears exactly when something is unsupported (invariant) | `test/flow/learn-flow.property.test.ts`: "R7: incomplete warning appears exactly when code is unsupported" |
+
+Properties written or suggested by opencode or another AI tool: R1, R5, R6, R7 (drafted with Claude, then reviewed and run by me)
+
+## Requirement changes
+
+| ID | Original requirement (P4A) | Revised requirement | Why it changed |
+|---|---|---|---|
+| R1 | Decision boxes look different from action boxes (checked only on `grade`). | Same rule, checked on every function: every decision box has a `?` marker, and no other box does. | Checkability: one example can't show the rule holds for every function. The user need (spotting where the path splits, C-1, C-2) is unchanged. |
+| R5 | If the file or function doesn't exist, it shows an error message and no chart. | If the function doesn't exist in the file, it shows an error naming the function and no chart. The missing-file case stays covered by the existing tool tests. | Checkability: a missing file depends on the file system and permission prompts, which a property test can't generate cleanly. The core need (O-1: "it should be an error", never a guessed chart) is kept. |
+| R6 | Renaming variables or reformatting code does not change the chart's shape. Adding blank lines or comments gives exactly the same output. | Split into two: (a) comments and blank lines give exactly the same output; (b) renaming a variable keeps the same shape (number and kinds of boxes and branches) but box text may change. | Feasibility: renaming must change the box text (the chart shows the code), so "the same output" can't hold for renaming. The split keeps what O-2 cared about: no surprise changes. |
+| R7 | When part of a function can't be drawn, the chart marks that part clearly and warns that the chart is incomplete. | Draw what can be drawn, mark the unsupported part, and add an "incomplete" warning, only when something is unsupported. The AI explanation covers the missing part in full. | Conflict: the classmate (C-3, C-4) wanted a chart with a warning, while the outside interviewee (O-3) wanted no chart and a fuller explanation. The revision keeps the chart and the warning, and the explanation, so both needs are met. |
+
+R2, R3 and R4 are kept as written. They can all be built in `render.ts` with small text changes, and their acceptance criteria are already concrete. They are not tested in P4B.
