@@ -6,7 +6,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "test": "bun test --timeout 30000 --only-failures",
+    "test": "bun test --timeout 30000 --only-failures --path-ignore-patterns '**/*.property.test.*' && bun run test:properties",
+    "test:properties": "bun test --timeout 30000 property.test",
     "typecheck": "tsgo --noEmit"
   },
   "exports": {
@@ -68,6 +69,7 @@
   "devDependencies": {
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
-    "@typescript/native-preview": "catalog:"
+    "@typescript/native-preview": "catalog:",
+    "fast-check": "4.10.2"
   }
 }

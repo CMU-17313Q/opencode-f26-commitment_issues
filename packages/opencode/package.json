@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "typecheck": "tsgo --noEmit",
-    "test": "bun test --timeout 30000 --only-failures",
+    "test": "bun test --timeout 30000 --only-failures --path-ignore-patterns '**/*.property.test.*' && bun run test:properties",
+    "test:properties": "bun test --timeout 30000 property.test",
     "test:httpapi": "bun run script/httpapi-exercise.ts --mode coverage --fail-on-missing --fail-on-skip && bun run script/httpapi-exercise.ts --mode auth --fail-on-missing --fail-on-skip && bun run script/httpapi-exercise.ts --mode effect --fail-on-missing --fail-on-skip",
     "bench:test": "bun run script/bench-test-suite.ts",
     "profile:test": "bun run script/profile-test-files.ts",
@@ -46,6 +47,7 @@
     "@types/yargs": "17.0.33",
     "@typescript/native-preview": "catalog:",
     "drizzle-orm": "catalog:",
+    "fast-check": "4.10.2",
     "prettier": "3.6.2",
     "typescript": "catalog:",
     "vscode-languageserver-types": "3.17.5",
