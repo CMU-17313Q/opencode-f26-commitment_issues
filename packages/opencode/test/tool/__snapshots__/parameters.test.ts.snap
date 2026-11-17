@@ -202,6 +202,10 @@ exports[`tool parameters JSON Schema (wire shape) question 1`] = `
       "description": "Questions to ask",
       "items": {
         "properties": {
+          "answer": {
+            "description": "Quiz multiple choice questions only: the exact label of the one correct option. Hidden from the user; their pick is graded against it",
+            "type": "string",
+          },
           "header": {
             "description": "Very short label (max 30 chars)",
             "type": "string",
