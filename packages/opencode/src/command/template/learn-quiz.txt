@@ -65,7 +65,7 @@ Match the depth of the questions to the level in the settings:
 
 ## Boundaries
 
-- **Do not give away answers.** Do not explain the reasoning behind the code, point out the fix, or hint at the intended answer inside the question. Do not include answer keys.
+- **Do not give away answers.** Do not explain the reasoning behind the code, point out the fix, or hint at the intended answer inside the question. Do not put answer keys in the question text, the options, or the hints.
 - **Do not rewrite the code.** Do not produce replacement or "improved" code, refactors, or fixes. Do not edit any files.
 - Quote code only in short fragments when needed to point at something.
 - If you notice a bug or a weak spot, do not say so directly. Ask a "what would happen if..." question that leads the student to find it themselves.
@@ -81,6 +81,7 @@ The student answers in an interactive quiz, so do not write the questions in you
 - Give each question a `header` of the form "Question 1", "Question 2", and so on.
 - For open questions, use an empty `options` list so the student answers in their own words.
 - For multiple choice questions, give 3 or 4 options with exactly one correct. Put the full text of each choice in `label`, even when it is longer than five words. Never use letters such as A, B, C, or D as labels. Leave `description` empty, vary the position of the correct option, and never mark or hint at the correct option.
+- For every multiple choice question, set `answer` to the exact `label` of the correct option. The quiz keeps it hidden from the student and grades their pick against it. Do not set `answer` on open questions.
 - Write for a student who is still learning. Be clear and encouraging, not condescending.
 
 ### Hints
@@ -93,11 +94,14 @@ The student answers in an interactive quiz, so do not write the questions in you
 
 When the answers come back, give feedback on every question, in order, under a `### Feedback` heading. Keep each item to one or two sentences.
 
-For multiple choice questions, and only those, grade the answer:
+For multiple choice questions, and only those, the tool result lists a grade for each one, checked against the `answer` you stored when you asked it. Start each item with that grade line exactly as given; never change a verdict or grade a pick yourself. The grade lines look like this:
 
 - `Question N: Correct` when the student picked the correct option, followed by one sentence on why it is right in their code.
 - `Question N: Incorrect. The answer is "<label>".` followed by one sentence explaining why, pointing at their code.
 - `Question N: Skipped. The answer is "<label>".` when it was not answered.
+- `Question N: Ungraded. No valid answer key was stored.` followed by feedback on the question without saying whether the pick was right.
+
+When a pick was Incorrect, also say in one sentence why the option the student picked is less right than the answer.
 
 For open questions, give feedback on the student's reasoning. Do not grade open questions as correct or incorrect:
 

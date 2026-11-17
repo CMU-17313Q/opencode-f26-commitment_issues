@@ -90,8 +90,12 @@ describe("reflection questions template", () => {
     expect(REFLECTION_QUESTIONS).toContain("never mark or hint at the correct option")
   })
 
-  test("grades multiple choice questions and shows the result", () => {
-    expect(REFLECTION_QUESTIONS).toContain("For multiple choice questions, and only those, grade the answer")
+  test("grades multiple choice questions against the stored answer key and shows the result", () => {
+    expect(REFLECTION_QUESTIONS).toContain("set `answer` to the exact `label` of the correct option")
+    expect(REFLECTION_QUESTIONS).toContain(
+      "For multiple choice questions, and only those, the tool result lists a grade for each one",
+    )
+    expect(REFLECTION_QUESTIONS).toContain("never change a verdict or grade a pick yourself")
     expect(REFLECTION_QUESTIONS).toContain("`Question N: Correct`")
     expect(REFLECTION_QUESTIONS).toContain('`Question N: Incorrect. The answer is "<label>".`')
     expect(REFLECTION_QUESTIONS).toContain('`Question N: Skipped. The answer is "<label>".`')

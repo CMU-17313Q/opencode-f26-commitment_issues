@@ -64,6 +64,7 @@ export function QuizPrompt(props: {
     cursor: 0,
     answers: props.request.questions.map(() => ""),
     hints: props.request.questions.map(() => false),
+    confirming: false,
   })
 
   const total = () => props.request.questions.length
@@ -96,9 +97,21 @@ export function QuizPrompt(props: {
     move(store.index - 1)
   }
 
+  // Quitting throws the answers away, so once anything is answered (including text still in the box) esc asks first.
+  // Quitting never sends the answers to be graded.
+  function quit() {
+    const draft = choice() ? "" : (textarea()?.plainText ?? "")
+    if (!store.answers.some((answer) => answer.trim()) && !draft.trim()) {
+      props.onQuit()
+      return
+    }
+    if (!choice()) setStore("answers", store.index, draft)
+    setStore("confirming", true)
+  }
+
   function pick(index: number) {
     const option = options()[index]
-    if (!option) return
+    if (!option || store.confirming) return
     move(store.index + 1, option.label)
   }
 
@@ -111,7 +124,7 @@ export function QuizPrompt(props: {
   createEffect(() => {
     const input = textarea()
     if (!input) return
-    if (choice()) {
+    if (choice() || store.confirming) {
       input.blur()
       return
     }
@@ -131,7 +144,7 @@ export function QuizPrompt(props: {
         if (current().hint) setStore("hints", store.index, (shown) => !shown)
       },
     },
-    { key: "escape", desc: "Quit quiz", group: "Quiz", cmd: () => props.onQuit() },
+    { key: "escape", desc: "Quit quiz", group: "Quiz", cmd: quit },
     ...tuiConfig.keybinds.get("app.exit"),
   ]
   const commands = [{ name: "app.exit", title: "Quit quiz", category: "Quiz", run: () => props.onQuit() }]
@@ -139,7 +152,7 @@ export function QuizPrompt(props: {
   useBindings(() => ({
     mode: QUIZ_MODE,
     target: textarea,
-    enabled: textarea() !== undefined && !choice(),
+    enabled: textarea() !== undefined && !choice() && !store.confirming,
     // Quiz navigation must win over the managed textarea input layer, which would otherwise consume these keys.
     priority: 1,
     commands,
@@ -151,7 +164,7 @@ export function QuizPrompt(props: {
 
   useBindings(() => ({
     mode: QUIZ_MODE,
-    enabled: choice(),
+    enabled: choice() && !store.confirming,
     commands,
     bindings: [
       { key: "return", desc: "Choose answer", group: "Quiz", cmd: () => pick(store.cursor) },
@@ -179,6 +192,17 @@ export function QuizPrompt(props: {
     ],
   }))
 
+  useBindings(() => ({
+    mode: QUIZ_MODE,
+    enabled: store.confirming,
+    commands,
+    bindings: [
+      { key: "return", desc: "Quit and lose answers", group: "Quiz", cmd: () => props.onQuit() },
+      { key: "escape", desc: "Keep answering", group: "Quiz", cmd: () => setStore("confirming", false) },
+      ...tuiConfig.keybinds.get("app.exit"),
+    ],
+  }))
+
   return (
     <box
       backgroundColor={theme.backgroundPanel}
@@ -186,7 +210,7 @@ export function QuizPrompt(props: {
       borderColor={theme.accent}
       customBorderChars={SplitBorder.customBorderChars}
       onMouseUp={() => {
-        if (!choice()) textarea()?.focus()
+        if (!choice() && !store.confirming) textarea()?.focus()
       }}
     >
       <box gap={1} paddingLeft={2} paddingRight={3} paddingTop={1} paddingBottom={1}>
@@ -199,6 +223,11 @@ export function QuizPrompt(props: {
           </text>
         </box>
         <text fg={theme.text}>{current().question}</text>
+        <Show when={store.confirming}>
+          <text fg={theme.warning}>
+            Quit the quiz? Your answers will be lost, and nothing will be sent for feedback.
+          </text>
+        </Show>
         <Show when={store.hints[store.index] && current().hint}>
           <text fg={theme.warning}>Hint: {current().hint}</text>
         </Show>
@@ -240,7 +269,25 @@ export function QuizPrompt(props: {
           cursorStyle={tuiConfig.cursor}
         />
       </box>
-      <box flexDirection="row" flexShrink={0} gap={2} paddingLeft={2} paddingRight={3} paddingBottom={1}>
+      <Show when={store.confirming}>
+        <box flexDirection="row" flexShrink={0} gap={2} paddingLeft={2} paddingRight={3} paddingBottom={1}>
+          <text fg={theme.text}>
+            enter <span style={{ fg: theme.textMuted }}>quit and lose answers</span>
+          </text>
+          <text fg={theme.text}>
+            esc <span style={{ fg: theme.textMuted }}>keep answering</span>
+          </text>
+        </box>
+      </Show>
+      <box
+        visible={!store.confirming}
+        flexDirection="row"
+        flexShrink={0}
+        gap={2}
+        paddingLeft={2}
+        paddingRight={3}
+        paddingBottom={1}
+      >
         <Show when={choice()}>
           <text fg={theme.text}>
             {"↑↓"} <span style={{ fg: theme.textMuted }}>select</span>

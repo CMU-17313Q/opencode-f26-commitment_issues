@@ -1,15 +1,8 @@
 /** @jsxImportSource @opentui/solid */
-import { TextareaRenderable } from "@opentui/core"
-import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui"
-import { testRender, useRenderer } from "@opentui/solid"
 import { expect, test } from "bun:test"
-import { mkdir } from "node:fs/promises"
-import path from "node:path"
-import { onCleanup } from "solid-js"
 import type { QuestionRequest } from "@opencode-ai/sdk/v2"
 import { tmpdir } from "../../fixture/fixture"
-import { createTuiResolvedConfig } from "../../fixture/tui-runtime"
-import { TestTuiContexts } from "../../fixture/tui-environment"
+import { mountQuiz, wait } from "../../fixture/quiz"
 
 const request: QuestionRequest = {
   id: "que_quiz",
@@ -58,87 +51,9 @@ const hinted: QuestionRequest = {
   ],
 }
 
-async function wait(fn: () => boolean, timeout = 2000) {
-  const start = Date.now()
-  while (!fn()) {
-    if (Date.now() - start > timeout) throw new Error("timed out waiting for condition")
-    await Bun.sleep(10)
-  }
-}
-
-async function mountQuiz(root: string, quiz = request) {
-  const state = path.join(root, "state")
-  await mkdir(state, { recursive: true })
-  await Bun.write(path.join(state, "kv.json"), "{}")
-
-  const [
-    { QuizPrompt },
-    { KVProvider },
-    { ThemeProvider },
-    { TuiConfigProvider },
-    { OpencodeKeymapProvider, registerOpencodeKeymap },
-  ] = await Promise.all([
-    import("../../../src/routes/session/quiz"),
-    import("../../../src/context/kv"),
-    import("../../../src/context/theme"),
-    import("../../../src/config"),
-    import("../../../src/keymap"),
-  ])
-
-  const submitted: string[][][] = []
-  const quits: number[] = []
-
-  function Harness() {
-    const renderer = useRenderer()
-    const keymap = createDefaultOpenTuiKeymap(renderer)
-    const resolvedConfig = createTuiResolvedConfig({ leader_timeout: 1000 })
-    const off = registerOpencodeKeymap(keymap, renderer, resolvedConfig)
-    onCleanup(off)
-
-    return (
-      <TestTuiContexts directory={root} paths={{ home: root, state, worktree: root }}>
-        <OpencodeKeymapProvider keymap={keymap}>
-          <TuiConfigProvider config={resolvedConfig}>
-            <KVProvider>
-              <ThemeProvider mode="dark">
-                <QuizPrompt
-                  request={quiz}
-                  onSubmit={(answers) => submitted.push(answers)}
-                  onQuit={() => quits.push(Date.now())}
-                />
-              </ThemeProvider>
-            </KVProvider>
-          </TuiConfigProvider>
-        </OpencodeKeymapProvider>
-      </TestTuiContexts>
-    )
-  }
-
-  const app = await testRender(() => <Harness />, { kittyKeyboard: true })
-  await wait(() => app.renderer.currentFocusedEditor instanceof TextareaRenderable)
-  const textarea = app.renderer.currentFocusedEditor
-  if (!(textarea instanceof TextareaRenderable)) throw new Error("expected focused quiz textarea")
-
-  return {
-    app,
-    textarea,
-    submitted,
-    quits,
-    async frame() {
-      await app.renderOnce()
-      return app.captureCharFrame()
-    },
-    async answer(text: string) {
-      await wait(() => app.renderer.currentFocusedEditor === textarea)
-      await app.mockInput.typeText(text)
-      await wait(() => textarea.plainText === text)
-    },
-  }
-}
-
 test("quiz shows one question at a time with progress", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     const frame = await quiz.frame()
@@ -160,7 +75,7 @@ test("quiz shows one question at a time with progress", async () => {
 
 test("quiz submits every answer after the last question", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     await quiz.answer("first")
@@ -180,7 +95,7 @@ test("quiz submits every answer after the last question", async () => {
 
 test("quiz keeps answers when going back and forth", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     await quiz.answer("first")
@@ -201,7 +116,7 @@ test("quiz keeps answers when going back and forth", async () => {
 
 test("going back from the first question stays on it", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     await quiz.answer("first")
@@ -216,7 +131,7 @@ test("going back from the first question stays on it", async () => {
 
 test("skipping a question leaves it unanswered", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     await quiz.answer("draft I want to drop")
@@ -233,16 +148,34 @@ test("skipping a question leaves it unanswered", async () => {
   }
 })
 
-test("quitting leaves the quiz without submitting", async () => {
+test("quitting with no answers leaves the quiz right away without submitting", async () => {
   await using tmp = await tmpdir()
-  const quiz = await mountQuiz(tmp.path)
+  const quiz = await mountQuiz(tmp.path, request)
+
+  try {
+    quiz.app.mockInput.pressEscape()
+    await wait(() => quiz.quits.length > 0)
+
+    expect(quiz.quits).toHaveLength(1)
+    expect(quiz.submitted).toEqual([])
+  } finally {
+    quiz.app.renderer.destroy()
+  }
+})
+
+test("quitting after answering asks first, and confirming leaves without submitting", async () => {
+  await using tmp = await tmpdir()
+  const quiz = await mountQuiz(tmp.path, request)
 
   try {
     await quiz.answer("first")
     quiz.app.mockInput.pressEnter()
     quiz.app.mockInput.pressEscape()
-    await wait(() => quiz.quits.length > 0)
+    await wait(() => quiz.app.captureCharFrame().includes("Your answers will be lost"))
+    expect(quiz.quits).toEqual([])
 
+    quiz.app.mockInput.pressEnter()
+    await wait(() => quiz.quits.length > 0)
     expect(quiz.quits).toHaveLength(1)
     expect(quiz.submitted).toEqual([])
   } finally {

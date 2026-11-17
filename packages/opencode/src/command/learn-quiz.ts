@@ -10,6 +10,8 @@ export const MIN_COUNT = 3
 export const MAX_COUNT = 10
 export const DEFAULT_COUNT = 5
 
+const VALUE_OPTIONS = ["--count", "--level", "--format"]
+
 export const USAGE = `/learn-quiz [file | --diff] [--count <${MIN_COUNT}-${MAX_COUNT}>] [--level ${LEVELS.join("|")}] [--format ${FORMATS.join("|")}] [-h | --help]`
 
 export type Scope = { type: "file"; file: string } | { type: "diff" } | { type: "recent" }
@@ -22,12 +24,15 @@ export type Options = {
 }
 
 export function parse(input: string): { ok: true; options: Options } | { ok: false; message: string } {
-  // Accept both `--count 5` and `--count=5`.
+  // Accept both `--count 5` and `--count=5`. Only options that take a value are split, so `--diff=yes` stays one
+  // token and is rejected below instead of leaving "yes" behind as a file name.
   const tokens = input
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-    .flatMap((token) => (token.startsWith("--") && token.includes("=") ? token.split(/=(.*)/s, 2) : [token]))
+    .flatMap((token) =>
+      VALUE_OPTIONS.some((option) => token.startsWith(`${option}=`)) ? token.split(/=(.*)/s, 2) : [token],
+    )
 
   // The TUI shows a help dialog before this runs; other clients get the usage line instead of "Unknown option".
   if (tokens.some((token) => token === "-h" || token === "--help")) return { ok: false, message: `Usage: ${USAGE}` }
@@ -37,13 +42,18 @@ export function parse(input: string): { ok: true; options: Options } | { ok: fal
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
     if (token === "--diff") {
+      if (flags.diff) return fail(repeated(token))
       flags.diff = true
       continue
     }
+    if (token.startsWith("--diff=")) return fail(`--diff does not take a value, got "${token}".`)
     if (token === "--count" || token === "--level" || token === "--format") {
       const value = tokens[i + 1]
       if (!value || value.startsWith("--")) return fail(missingValue(token))
-      flags[token.slice(2) as "count" | "level" | "format"] = value
+      const name = token.slice(2) as "count" | "level" | "format"
+      // A repeated option is an error rather than "last one wins", so an invalid value is never silently replaced.
+      if (flags[name] !== undefined) return fail(repeated(token))
+      flags[name] = value
       i++
       continue
     }
@@ -89,6 +99,10 @@ function describeScope(scope: Scope) {
   if (scope.type === "file") return `the file \`${scope.file}\``
   if (scope.type === "diff") return "uncommitted changes"
   return "recent changes"
+}
+
+function repeated(flag: string) {
+  return `${flag} can only be given once.`
 }
 
 function missingValue(flag: string) {
