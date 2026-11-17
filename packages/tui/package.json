@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "test": "bun test --timeout 30000 --only-failures --path-ignore-patterns '**/*.property.test.*' && bun run test:properties",
+    "test": "bun run test:properties && bun test --timeout 30000 --only-failures --path-ignore-patterns '**/*.property.test.*'",
     "test:properties": "bun test --timeout 30000 property.test",
     "typecheck": "tsgo --noEmit"
   },
