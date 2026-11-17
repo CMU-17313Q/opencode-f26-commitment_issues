@@ -53,7 +53,11 @@ export const LearnFlowTool = Tool.define(
           const result = yield* Effect.promise(() => extractGraph(source, params.functionName))
           if (!result.ok) return { title, output: result.error, metadata: { ok: false } }
 
-          return { title, output: renderFlowchart(result.graph), metadata: { ok: true } }
+          return {
+            title,
+            output: renderFlowchart(result.graph, { markDecisions: true, warnIncomplete: true }),
+            metadata: { ok: true },
+          }
         }).pipe(Effect.orDie),
     }
   }),

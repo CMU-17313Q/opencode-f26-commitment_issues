@@ -2,6 +2,19 @@ import type { Edge, Graph, Node } from "./graph"
 
 const MAX_LABEL_WIDTH = 40
 
+// Shown under the chart when part of the function was drawn as "unsupported"
+// (P4B R7: users asked to be told when "the representation ... is not accurate").
+export const INCOMPLETE_NOTE =
+  'Note: this chart is incomplete. Boxes marked "unsupported" stand for code that could not be drawn.'
+
+export type RenderOptions = {
+  // P4B R1: start decision boxes with "? " so places where the path can split
+  // stand out from action boxes.
+  markDecisions?: boolean
+  // P4B R7: add INCOMPLETE_NOTE when any drawn box is unsupported.
+  warnIncomplete?: boolean
+}
+
 // Renders a graph as boxes joined top to bottom. A linear chain renders as
 // box -> box -> box, connected by a plain arrow. A "decision" node instead
 // draws each outgoing branch under a "+-- <label>" marker, with that
@@ -14,7 +27,7 @@ const MAX_LABEL_WIDTH = 40
 // reconverging) prints a "continues" line instead of redrawing the box.
 // Long labels wrap across multiple lines inside the box instead of losing
 // text. Empty or invalid graphs never throw; they return a clear error string.
-export function renderFlowchart(graph: Graph): string {
+export function renderFlowchart(graph: Graph, options: RenderOptions = {}): string {
   const byID = new Map(graph.nodes.map((node) => [node.id, node]))
 
   const start = graph.nodes.find((node) => node.kind === "start")
@@ -58,7 +71,7 @@ export function renderFlowchart(graph: Graph): string {
   function walk(node: Node, prefix: string) {
     path.push(node.id)
     drawn.add(node.id)
-    for (const line of renderBox(node)) lines.push(prefix + line)
+    for (const line of renderBox(node, options)) lines.push(prefix + line)
 
     const edges = outgoing.get(node.id) ?? []
     if (node.kind === "decision") {
@@ -77,13 +90,21 @@ export function renderFlowchart(graph: Graph): string {
   }
 
   walk(start, "")
+  if (options.warnIncomplete && graph.nodes.some((node) => node.kind === "unsupported" && drawn.has(node.id))) {
+    lines.push("", INCOMPLETE_NOTE)
+  }
   return lines.join("\n")
 }
 
-function renderBox(node: Node): string[] {
+function renderBox(node: Node, options: RenderOptions): string[] {
   // Flag unsupported constructs in the box itself, rather than trusting the
   // extractor's label text alone to make that clear.
-  const text = node.kind === "unsupported" ? `unsupported: ${node.label}` : node.label
+  const text =
+    node.kind === "unsupported"
+      ? `unsupported: ${node.label}`
+      : node.kind === "decision" && options.markDecisions
+        ? `? ${node.label}`
+        : node.label
   const wrapped = wrap(text, MAX_LABEL_WIDTH)
   const width = Math.max(...wrapped.map((line) => line.length))
   const border = "+" + "-".repeat(width + 2) + "+"
