@@ -1,0 +1,34 @@
+name: P4B Ayan Properties
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p4b-ayanf-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fork-properties:
+    name: Conversation fork properties
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Bun and dependencies
+        uses: ./.github/actions/setup-bun
+
+      - name: Run R1 and R2 backend properties
+        working-directory: packages/opencode
+        run: GITHUB_ACTIONS=false bun test --timeout 60000 ./test/session/fork.property.test.ts
+
+      - name: Run R1, R3, and R6 app properties
+        working-directory: packages/app
+        run: bun test --conditions=browser --preload ./happydom.ts ./test-browser/fork-prompt.property.test.ts
